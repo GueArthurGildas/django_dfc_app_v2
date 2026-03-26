@@ -1,8 +1,10 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView, DetailView, CreateView, UpdateView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, View
 from django.urls import reverse_lazy
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
 from .models import SousDirection, Section, PIP
-from .forms import SousDirectionForm, SectionForm, PIPForm
+from .forms import SousDirectionForm, SectionForm, PIPForm, PhotoResponsableForm
 
 
 class SousDirectionPortailView(LoginRequiredMixin, ListView):
@@ -16,9 +18,7 @@ class SousDirectionPortailView(LoginRequiredMixin, ListView):
         if user.role and user.role.code in ('admin', 'dfc', 'da'):
             return qs
         user_sd = user.get_sous_direction()
-        if user_sd:
-            return qs.filter(pk=user_sd.pk)
-        return qs.none()
+        return qs.filter(pk=user_sd.pk) if user_sd else qs.none()
 
 
 class SousDirectionDetailView(LoginRequiredMixin, DetailView):
@@ -28,8 +28,41 @@ class SousDirectionDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['pips_actifs'] = self.object.pips.filter(actif=True)
+        sd = self.object
+        ctx['pips_actifs']        = sd.pips.filter(actif=True)
+        ctx['membres']            = sd.get_membres()
+        ctx['stats']              = sd.get_stats()
+        ctx['photo_form']         = PhotoResponsableForm(instance=sd.responsable) if sd.responsable else None
+        ctx['peut_modifier']      = self.request.user.role and self.request.user.role.code in ('admin', 'sd')
+        # Données pour le pie chart Chart.js
+        stats = ctx['stats']
+        ctx['chart_data'] = {
+            'labels':      ['Clôturées', 'En cours / Ouvertes', 'En attente', 'En retard'],
+            'values':      [
+                stats['nb_activites_cloturees'],
+                stats['nb_activites_ouvertes'],
+                stats['nb_activites_en_attente'],
+                stats['nb_activites_en_retard'],
+            ],
+            'colors':      ['#28a745', sd.couleur, '#F5A623', '#dc3545'],
+        }
         return ctx
+
+
+class PhotoResponsableView(LoginRequiredMixin, View):
+    """Upload de la photo du responsable de la SD via POST"""
+    def post(self, request, pk):
+        sd = get_object_or_404(SousDirection, pk=pk)
+        if not sd.responsable:
+            messages.error(request, "Aucun responsable défini pour cette sous-direction.")
+            return redirect('organisation:sd_detail', pk=pk)
+        form = PhotoResponsableForm(request.POST, request.FILES, instance=sd.responsable)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Photo du responsable mise à jour avec succès.")
+        else:
+            messages.error(request, "Erreur lors de l'upload. Vérifiez le format de l'image.")
+        return redirect('organisation:sd_detail', pk=pk)
 
 
 class SousDirectionCreateView(LoginRequiredMixin, CreateView):

@@ -11,162 +11,326 @@
   </a>
 </div>
 
-<!-- ══ EN-TÊTE IDENTITAIRE ══════════════════════════════════════════════════ -->
-<div class="card mb-4" style="border:none;border-radius:1rem;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)">
-  <div style="background:{{ sd.couleur }};padding:2rem 2rem 1.5rem;position:relative">
-    <div class="d-flex align-items-center gap-4">
+<!-- ══ BANDEAU IDENTITAIRE ══════════════════════════════════════════════════ -->
+<div class="card mb-4" style="border:none;border-radius:1.25rem;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.1)">
+  <div style="background:{{ sd.couleur }};padding:2rem 2rem 0;position:relative;min-height:140px">
+    <div class="d-flex align-items-start gap-4 pb-3">
 
-      <!-- Photo responsable -->
-      <div>
+      <!-- Avatar responsable + bouton changement photo -->
+      <div style="position:relative;flex-shrink:0">
         {% if sd.responsable and sd.responsable.photo %}
           <img src="{{ sd.responsable.photo.url }}" alt="{{ sd.responsable.nom_complet }}"
-               style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.6)">
+               id="avatar-responsable"
+               style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.7);box-shadow:0 2px 8px rgba(0,0,0,.2)">
         {% else %}
-          <div style="width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;border:3px solid rgba(255,255,255,.4)">
-            <i class="bi bi-person-fill" style="color:{{ sd.couleur_texte }};font-size:2rem"></i>
+          <div id="avatar-responsable"
+               style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;border:3px solid rgba(255,255,255,.5)">
+            <i class="bi bi-person-fill" style="font-size:2.2rem;color:{{ sd.couleur_texte }}"></i>
           </div>
+        {% endif %}
+
+        {% if peut_modifier and sd.responsable %}
+        <button onclick="document.getElementById('modal-photo').style.display='flex'"
+                title="Changer la photo"
+                style="position:absolute;bottom:0;right:0;width:26px;height:26px;border-radius:50%;background:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.2)">
+          <i class="bi bi-camera-fill" style="font-size:.75rem;color:#003F7F"></i>
+        </button>
         {% endif %}
       </div>
 
-      <!-- Titre et infos -->
+      <!-- Titre et responsable -->
       <div class="flex-grow-1">
-        <span class="badge mb-1" style="background:rgba(255,255,255,.2);color:{{ sd.couleur_texte }};font-size:.75rem;letter-spacing:.06em">
+        <span style="display:inline-block;background:rgba(255,255,255,.2);color:{{ sd.couleur_texte }};font-size:.72rem;font-weight:700;letter-spacing:.08em;padding:.2rem .6rem;border-radius:.3rem;margin-bottom:.4rem">
           {{ sd.code }}
         </span>
-        <h1 style="color:{{ sd.couleur_texte }};font-size:1.4rem;font-weight:800;margin:0 0 .3rem;letter-spacing:-.02em">
+        <h1 style="color:{{ sd.couleur_texte }};font-size:1.5rem;font-weight:800;margin:0 0 .4rem;letter-spacing:-.02em;line-height:1.2">
           {{ sd.libelle }}
         </h1>
-        <div style="color:{{ sd.couleur_texte }};opacity:.85;font-size:.85rem">
-          <i class="bi bi-person me-1"></i>
-          <strong>{{ sd.responsable.nom_complet|default:"Responsable non défini" }}</strong>
-          {% if sd.responsable %} — {{ sd.responsable.role }}{% endif %}
+        <div style="color:{{ sd.couleur_texte }};opacity:.9;font-size:.85rem;display:flex;align-items:center;gap:.5rem">
+          <i class="bi bi-person-badge"></i>
+          <span>
+            <strong>{{ sd.responsable.nom_complet|default:"Responsable non défini" }}</strong>
+            {% if sd.responsable and sd.responsable.role %}
+              <span style="opacity:.75"> — {{ sd.responsable.role }}</span>
+            {% endif %}
+          </span>
         </div>
       </div>
 
-      <!-- Actions -->
+      <!-- Bouton modifier -->
+      {% if peut_modifier %}
       <div>
-        {% if request.user.role.code == 'admin' %}
         <a href="{% url 'organisation:sd_update' sd.pk %}"
-           class="btn btn-sm" style="background:rgba(255,255,255,.2);color:{{ sd.couleur_texte }};border:1px solid rgba(255,255,255,.4);border-radius:.5rem">
+           class="btn btn-sm" style="background:rgba(255,255,255,.2);color:{{ sd.couleur_texte }};border:1px solid rgba(255,255,255,.4);border-radius:.5rem;backdrop-filter:blur(4px)">
           <i class="bi bi-pencil me-1"></i>Modifier
         </a>
-        {% endif %}
       </div>
+      {% endif %}
     </div>
 
-    {% if sd.description %}
-    <p style="color:{{ sd.couleur_texte }};opacity:.85;font-size:.88rem;margin:1rem 0 0;line-height:1.6;max-width:70ch">
-      {{ sd.description }}
-    </p>
-    {% endif %}
-
-    <!-- Décoration -->
-    <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.07)"></div>
+    <!-- Décorations -->
+    <div style="position:absolute;top:-40px;right:-40px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.06)"></div>
+    <div style="position:absolute;bottom:-20px;right:80px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.05)"></div>
   </div>
 
-  <!-- KPIs rapides -->
-  {% with stats=sd.get_stats %}
-  <div class="row g-0" style="border-top:3px solid {{ sd.couleur }}">
-    <div class="col-3 text-center py-3" style="border-right:1px solid #f0f0f0">
-      <div style="font-size:1.6rem;font-weight:800;color:{{ sd.couleur }}">{{ stats.nb_membres }}</div>
-      <div style="font-size:.75rem;color:#6b7280;font-weight:500">Membres</div>
+  <!-- Barre KPI sous le bandeau -->
+  <div class="row g-0" style="border-top:4px solid {{ sd.couleur }};background:#fff">
+    <div class="col text-center py-3" style="border-right:1px solid #f0f0f0">
+      <div style="font-size:1.75rem;font-weight:800;color:{{ sd.couleur }};line-height:1">{{ stats.nb_membres }}</div>
+      <div style="font-size:.72rem;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Membres</div>
     </div>
-    <div class="col-3 text-center py-3" style="border-right:1px solid #f0f0f0">
-      <div style="font-size:1.6rem;font-weight:800;color:{{ sd.couleur }}">{{ stats.nb_sections }}</div>
-      <div style="font-size:.75rem;color:#6b7280;font-weight:500">Sections</div>
+    <div class="col text-center py-3" style="border-right:1px solid #f0f0f0">
+      <div style="font-size:1.75rem;font-weight:800;color:{{ sd.couleur }};line-height:1">{{ stats.nb_sections }}</div>
+      <div style="font-size:.72rem;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Sections</div>
     </div>
-    <div class="col-3 text-center py-3" style="border-right:1px solid #f0f0f0">
-      <div style="font-size:1.6rem;font-weight:800;color:{% if stats.nb_activites_en_retard > 0 %}#dc2626{% else %}{{ sd.couleur }}{% endif %}">
+    <div class="col text-center py-3" style="border-right:1px solid #f0f0f0">
+      <div style="font-size:1.75rem;font-weight:800;color:{{ sd.couleur }};line-height:1">{{ stats.nb_activites_ouvertes }}</div>
+      <div style="font-size:.72rem;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Activités</div>
+    </div>
+    <div class="col text-center py-3" style="border-right:1px solid #f0f0f0">
+      <div style="font-size:1.75rem;font-weight:800;color:{% if stats.nb_activites_en_retard > 0 %}#dc2626{% else %}{{ sd.couleur }}{% endif %};line-height:1">
         {{ stats.nb_activites_en_retard }}
       </div>
-      <div style="font-size:.75rem;color:#6b7280;font-weight:500">En retard</div>
+      <div style="font-size:.72rem;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.04em">En retard</div>
     </div>
-    <div class="col-3 text-center py-3">
-      <div style="font-size:1.6rem;font-weight:800;color:{{ sd.couleur }}">{{ stats.nb_activites_ouvertes }}</div>
-      <div style="font-size:.75rem;color:#6b7280;font-weight:500">Activités</div>
+    <div class="col text-center py-3">
+      <div style="font-size:1.75rem;font-weight:800;color:#28a745;line-height:1">{{ stats.taux_completion }}%</div>
+      <div style="font-size:.72rem;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Complétés</div>
     </div>
   </div>
-  {% endwith %}
 </div>
 
-<!-- ══ CONTENU : SECTIONS + MODULES ═════════════════════════════════════════ -->
+
+<!-- ══ LIGNE 1 : Description + Mission ══════════════════════════════════════ -->
+{% if sd.description or sd.mission %}
+<div class="row g-4 mb-4">
+  {% if sd.description %}
+  <div class="{% if sd.mission %}col-lg-5{% else %}col-12{% endif %}">
+    <div class="card h-100" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-body px-4 py-3">
+        <h5 style="font-size:.95rem;font-weight:700;color:#1a1a2e;margin-bottom:.3rem;letter-spacing:-.01em">
+          <span style="display:inline-block;width:4px;height:18px;background:{{ sd.couleur }};border-radius:2px;margin-right:.5rem;vertical-align:middle"></span>
+          Description générale
+        </h5>
+        <p style="font-size:.88rem;color:#4b5563;line-height:1.7;margin:0">{{ sd.description }}</p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if sd.mission %}
+  <div class="{% if sd.description %}col-lg-7{% else %}col-12{% endif %}">
+    <div class="card h-100" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:4px solid {{ sd.couleur }}">
+      <div class="card-body px-4 py-3">
+        <h5 style="font-size:.95rem;font-weight:700;color:#1a1a2e;margin-bottom:.3rem;letter-spacing:-.01em">
+          <i class="bi bi-bullseye me-2" style="color:{{ sd.couleur }}"></i>Mission & Objectifs stratégiques
+        </h5>
+        <p style="font-size:.88rem;color:#4b5563;line-height:1.8;margin:0;white-space:pre-line">{{ sd.mission }}</p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+
+<!-- ══ LIGNE 2 : Pie Chart + Membres ════════════════════════════════════════ -->
+<div class="row g-4 mb-4">
+
+  <!-- Pie Chart objectifs -->
+  <div class="col-lg-4">
+    <div class="card h-100" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-body px-4 py-3">
+        <h5 style="font-size:.95rem;font-weight:700;color:#1a1a2e;margin-bottom:.2rem">
+          <span style="display:inline-block;width:4px;height:18px;background:{{ sd.couleur }};border-radius:2px;margin-right:.5rem;vertical-align:middle"></span>
+          Taux de réalisation
+        </h5>
+        <p style="font-size:.75rem;color:#9ca3af;margin-bottom:1rem">Objectifs atteints — activités de la SD</p>
+
+        <!-- Jauge centrale -->
+        <div class="text-center mb-2">
+          <div style="position:relative;display:inline-block">
+            <canvas id="chartObjectifs" width="180" height="180"></canvas>
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
+              <div style="font-size:1.8rem;font-weight:800;color:{{ sd.couleur }};line-height:1">{{ stats.taux_completion }}%</div>
+              <div style="font-size:.68rem;color:#9ca3af;font-weight:600">complétés</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Légende -->
+        <div class="d-flex flex-column gap-1 mt-2">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+              <div style="width:10px;height:10px;border-radius:2px;background:#28a745;flex-shrink:0"></div>
+              <span style="font-size:.78rem;color:#374151">Clôturées</span>
+            </div>
+            <span style="font-size:.78rem;font-weight:700;color:#28a745">{{ stats.nb_activites_cloturees }}</span>
+          </div>
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+              <div style="width:10px;height:10px;border-radius:2px;background:{{ sd.couleur }};flex-shrink:0"></div>
+              <span style="font-size:.78rem;color:#374151">En cours / Ouvertes</span>
+            </div>
+            <span style="font-size:.78rem;font-weight:700;color:{{ sd.couleur }}">{{ stats.nb_activites_ouvertes }}</span>
+          </div>
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+              <div style="width:10px;height:10px;border-radius:2px;background:#F5A623;flex-shrink:0"></div>
+              <span style="font-size:.78rem;color:#374151">En attente</span>
+            </div>
+            <span style="font-size:.78rem;font-weight:700;color:#F5A623">{{ stats.nb_activites_en_attente }}</span>
+          </div>
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+              <div style="width:10px;height:10px;border-radius:2px;background:#dc3545;flex-shrink:0"></div>
+              <span style="font-size:.78rem;color:#374151">En retard</span>
+            </div>
+            <span style="font-size:.78rem;font-weight:700;color:#dc3545">{{ stats.nb_activites_en_retard }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Liste des membres -->
+  <div class="col-lg-8">
+    <div class="card h-100" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid {{ sd.couleur }};border-radius:1rem 1rem 0 0">
+        <h5 style="margin:0;font-size:.95rem;font-weight:700;color:#1a1a2e">
+          <i class="bi bi-people me-2" style="color:{{ sd.couleur }}"></i>
+          Équipe — {{ stats.nb_membres }} membre{% if stats.nb_membres > 1 %}s{% endif %}
+        </h5>
+        <p style="margin:0;font-size:.75rem;color:#9ca3af">Personnel actif de la {{ sd.code }}, classé par grade</p>
+      </div>
+      <div class="card-body p-0" style="max-height:380px;overflow-y:auto">
+
+        {% for membre in membres %}
+        <div class="d-flex align-items-center gap-3 px-4 py-3 membre-row {% if not forloop.last %}border-bottom{% endif %}"
+             style="border-color:#f8f8f8;transition:background .15s">
+
+          <!-- Avatar -->
+          <div style="flex-shrink:0;position:relative">
+            {% if membre.photo %}
+              <img src="{{ membre.photo.url }}" alt="{{ membre.nom_complet }}"
+                   style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid {{ sd.couleur }}33">
+            {% else %}
+              <div style="width:44px;height:44px;border-radius:50%;background:{{ sd.couleur }}18;display:flex;align-items:center;justify-content:center;border:2px solid {{ sd.couleur }}33">
+                <span style="font-size:.9rem;font-weight:700;color:{{ sd.couleur }}">
+                  {{ membre.first_name|first|upper }}{{ membre.last_name|first|upper }}
+                </span>
+              </div>
+            {% endif %}
+            <!-- Indicateur actif -->
+            <div style="position:absolute;bottom:1px;right:1px;width:10px;height:10px;border-radius:50%;background:#28a745;border:2px solid #fff"></div>
+          </div>
+
+          <!-- Infos -->
+          <div class="flex-grow-1 min-w-0">
+            <div style="font-size:.88rem;font-weight:600;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              {{ membre.nom_complet }}
+            </div>
+            <div class="d-flex align-items-center gap-2 mt-1">
+              {% if membre.matricule %}
+              <span style="font-size:.7rem;color:#9ca3af">{{ membre.matricule }}</span>
+              <span style="color:#e5e7eb">·</span>
+              {% endif %}
+              <span style="font-size:.7rem;color:#6b7280">{{ membre.get_section }}</span>
+            </div>
+          </div>
+
+          <!-- Badge grade -->
+          <div style="flex-shrink:0">
+            {% if membre.role %}
+            <span class="badge" style="
+              {% if membre.role.niveau == 1 %}background:#7c3aed18;color:#7c3aed;
+              {% elif membre.role.niveau == 2 %}background:#1d4ed818;color:#1d4ed8;
+              {% elif membre.role.niveau == 3 %}background:#0369a118;color:#0369a1;
+              {% elif membre.role.niveau == 4 %}background:{{ sd.couleur }}18;color:{{ sd.couleur }};
+              {% elif membre.role.niveau == 5 %}background:#06966618;color:#059669;
+              {% elif membre.role.niveau == 6 %}background:#d9770618;color:#d97706;
+              {% else %}background:#6b728018;color:#6b7280;{% endif %}
+              font-size:.7rem;font-weight:600;padding:.28rem .55rem;border-radius:.4rem">
+              {{ membre.role.libelle }}
+            </span>
+            {% endif %}
+          </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-5" style="color:#9ca3af">
+          <i class="bi bi-people display-6 d-block mb-2" style="opacity:.3"></i>
+          <p style="font-size:.85rem">Aucun membre affecté à cette sous-direction</p>
+        </div>
+        {% endfor %}
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══ LIGNE 3 : Sections + Modules + PIP ═══════════════════════════════════ -->
 <div class="row g-4">
 
   <!-- Sections -->
-  <div class="col-lg-7">
+  <div class="col-lg-5">
     <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-      <div class="card-header d-flex align-items-center justify-content-between px-4 py-3"
-           style="background:#fff;border-bottom:2px solid {{ sd.couleur }};border-radius:1rem 1rem 0 0">
-        <div>
-          <h5 style="margin:0;font-size:1rem;font-weight:700;color:#1a1a2e">
-            <i class="bi bi-layers me-2" style="color:{{ sd.couleur }}"></i>Sections
-          </h5>
-          <p style="margin:0;font-size:.78rem;color:#9ca3af">Unités organisationnelles de la {{ sd.code }}</p>
+      <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid {{ sd.couleur }};border-radius:1rem 1rem 0 0">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h5 style="margin:0;font-size:.95rem;font-weight:700;color:#1a1a2e">
+              <i class="bi bi-layers me-2" style="color:{{ sd.couleur }}"></i>Sections
+            </h5>
+            <p style="margin:0;font-size:.75rem;color:#9ca3af">{{ stats.nb_sections }} section{% if stats.nb_sections > 1 %}s{% endif %} active{% if stats.nb_sections > 1 %}s{% endif %}</p>
+          </div>
+          {% if peut_modifier %}
+          <a href="{% url 'organisation:section_create' %}" class="btn btn-sm"
+             style="background:{{ sd.couleur }};color:{{ sd.couleur_texte }};border-radius:.5rem;font-size:.78rem">
+            <i class="bi bi-plus-lg"></i>
+          </a>
+          {% endif %}
         </div>
-        {% if request.user.role.code in 'admin,sd' %}
-        <a href="{% url 'organisation:section_create' %}" class="btn btn-sm"
-           style="background:{{ sd.couleur }};color:{{ sd.couleur_texte }};border-radius:.5rem;font-size:.78rem">
-          <i class="bi bi-plus-lg"></i>
-        </a>
-        {% endif %}
       </div>
       <div class="card-body p-0">
         {% for section in sd.sections.all %}
-        <div class="d-flex align-items-center px-4 py-3 {% if not forloop.last %}border-bottom{% endif %}"
-             style="border-color:#f5f5f5">
-          <!-- Icône section -->
-          <div class="me-3" style="width:40px;height:40px;border-radius:.6rem;background:{{ sd.couleur }}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <i class="bi bi-diagram-2" style="color:{{ sd.couleur }};font-size:1rem"></i>
+        <div class="d-flex align-items-center px-4 py-3 {% if not forloop.last %}border-bottom{% endif %}" style="border-color:#f8f8f8">
+          <div class="me-3" style="width:38px;height:38px;border-radius:.6rem;background:{{ sd.couleur }}14;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <i class="bi bi-diagram-2" style="color:{{ sd.couleur }};font-size:.9rem"></i>
           </div>
-          <!-- Infos -->
           <div class="flex-grow-1">
-            <div style="font-size:.9rem;font-weight:600;color:#1a1a2e">{{ section.code }}</div>
-            <div style="font-size:.8rem;color:#6b7280">{{ section.libelle }}</div>
-            {% if section.responsable %}
-            <div style="font-size:.75rem;color:#9ca3af;margin-top:.1rem">
-              <i class="bi bi-person me-1"></i>{{ section.responsable.nom_complet }}
-            </div>
-            {% endif %}
+            <div style="font-size:.88rem;font-weight:600;color:#1a1a2e">{{ section.code }}</div>
+            <div style="font-size:.78rem;color:#6b7280">{{ section.libelle }}</div>
           </div>
-          <!-- Nombre de membres -->
           <div class="text-end me-3">
-            <div style="font-size:1rem;font-weight:700;color:{{ sd.couleur }}">
-              {{ section.utilisateurs_lien.count }}
-            </div>
-            <div style="font-size:.7rem;color:#9ca3af">membre{% if section.utilisateurs_lien.count > 1 %}s{% endif %}</div>
+            <div style="font-size:1rem;font-weight:700;color:{{ sd.couleur }}">{{ section.utilisateurs_lien.count }}</div>
+            <div style="font-size:.68rem;color:#9ca3af">membre{% if section.utilisateurs_lien.count > 1 %}s{% endif %}</div>
           </div>
-          <!-- Lien -->
           <a href="{% url 'organisation:section_detail' section.pk %}"
-             class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem;font-size:.78rem">
-            Voir
-          </a>
+             class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem;font-size:.75rem">Voir</a>
         </div>
         {% empty %}
-        <div class="text-center py-4 text-muted">
-          <i class="bi bi-layers display-6 d-block mb-2"></i>
-          Aucune section dans cette sous-direction
-        </div>
+        <div class="text-center py-4" style="color:#9ca3af;font-size:.85rem">Aucune section</div>
         {% endfor %}
       </div>
     </div>
   </div>
 
   <!-- Modules + PIP -->
-  <div class="col-lg-5 d-flex flex-column gap-4">
+  <div class="col-lg-7 d-flex flex-column gap-4">
 
     <!-- Modules -->
     <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
       <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid {{ sd.couleur }};border-radius:1rem 1rem 0 0">
-        <h5 style="margin:0;font-size:1rem;font-weight:700;color:#1a1a2e">
+        <h5 style="margin:0;font-size:.95rem;font-weight:700;color:#1a1a2e">
           <i class="bi bi-grid me-2" style="color:{{ sd.couleur }}"></i>Modules métier
         </h5>
-        <p style="margin:0;font-size:.78rem;color:#9ca3af">Fonctionnalités spécifiques à {{ sd.code }}</p>
+        <p style="margin:0;font-size:.75rem;color:#9ca3af">Fonctionnalités spécifiques à {{ sd.code }}</p>
       </div>
       <div class="card-body py-2 px-3">
         {% for m in sd.get_modules %}
         {% if m.disponible %}
-          <a href="{{ m.href }}" class="d-flex align-items-center gap-3 rounded px-3 py-2 mb-1 text-decoration-none module-row"
-             style="transition:background .15s">
+          <a href="{{ m.href }}" class="d-flex align-items-center gap-3 rounded px-3 py-2 mb-1 text-decoration-none" style="transition:background .15s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
             <span style="width:36px;height:36px;border-radius:.6rem;background:{{ sd.couleur }}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
               <i class="{{ m.icone }}" style="color:{{ sd.couleur }}"></i>
             </span>
@@ -188,18 +352,21 @@
       </div>
     </div>
 
-    <!-- PIP liés -->
+    <!-- PIP -->
     <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
       <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid {{ sd.couleur }};border-radius:1rem 1rem 0 0">
-        <h5 style="margin:0;font-size:1rem;font-weight:700;color:#1a1a2e">
-          <i class="bi bi-people me-2" style="color:{{ sd.couleur }}"></i>Partenaires PIP
+        <h5 style="margin:0;font-size:.95rem;font-weight:700;color:#1a1a2e">
+          <i class="bi bi-diagram-3 me-2" style="color:{{ sd.couleur }}"></i>Partenaires PIP
         </h5>
       </div>
       <div class="card-body py-2 px-3">
         {% for pip in pips_actifs %}
-        <div class="d-flex align-items-center gap-2 py-2 {% if not forloop.last %}border-bottom{% endif %}" style="border-color:#f5f5f5">
-          <span class="badge" style="background:{{ sd.couleur }}18;color:{{ sd.couleur }};font-weight:600">{{ pip.code }}</span>
-          <span style="font-size:.83rem;color:#374151">{{ pip.libelle }}</span>
+        <div class="d-flex align-items-center gap-3 py-2 {% if not forloop.last %}border-bottom{% endif %}" style="border-color:#f8f8f8">
+          <span class="badge" style="background:{{ sd.couleur }}18;color:{{ sd.couleur }};font-weight:700;font-size:.72rem">{{ pip.code }}</span>
+          <div class="flex-grow-1">
+            <div style="font-size:.83rem;font-weight:500;color:#374151">{{ pip.libelle }}</div>
+            {% if pip.email %}<div style="font-size:.73rem;color:#9ca3af">{{ pip.email }}</div>{% endif %}
+          </div>
         </div>
         {% empty %}
         <p class="text-muted text-center py-3" style="font-size:.85rem">Aucun PIP associé</p>
@@ -210,7 +377,110 @@
   </div>
 </div>
 
+
+<!-- ══ MODAL CHANGEMENT PHOTO RESPONSABLE ════════════════════════════════════ -->
+{% if peut_modifier and sd.responsable %}
+<div id="modal-photo"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center"
+     onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:#fff;border-radius:1rem;padding:2rem;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h5 style="margin:0;font-size:1rem;font-weight:700;color:#1a1a2e">
+        <i class="bi bi-camera me-2" style="color:{{ sd.couleur }}"></i>Photo du responsable
+      </h5>
+      <button onclick="document.getElementById('modal-photo').style.display='none'"
+              style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#6b7280">&times;</button>
+    </div>
+
+    <!-- Aperçu -->
+    <div class="text-center mb-3">
+      {% if sd.responsable.photo %}
+        <img src="{{ sd.responsable.photo.url }}" id="preview-photo"
+             style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid {{ sd.couleur }}44">
+      {% else %}
+        <div id="preview-photo" style="width:80px;height:80px;border-radius:50%;background:{{ sd.couleur }}18;display:inline-flex;align-items:center;justify-content:center;border:3px solid {{ sd.couleur }}44">
+          <i class="bi bi-person-fill" style="font-size:2rem;color:{{ sd.couleur }}"></i>
+        </div>
+      {% endif %}
+      <div style="font-size:.82rem;color:#6b7280;margin-top:.5rem">
+        <strong>{{ sd.responsable.nom_complet }}</strong>
+      </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" action="{% url 'organisation:sd_photo_responsable' sd.pk %}">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">
+          Sélectionner une image
+        </label>
+        <input type="file" name="photo" accept="image/*" class="form-control form-control-sm"
+               onchange="previewPhoto(this)">
+        <div style="font-size:.72rem;color:#9ca3af;margin-top:.3rem">
+          JPG, PNG ou GIF — max 5 Mo — recommandé : format carré
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-sm flex-grow-1 fw-bold"
+                style="background:{{ sd.couleur }};color:{{ sd.couleur_texte }};border-radius:.5rem">
+          <i class="bi bi-check-lg me-1"></i>Enregistrer
+        </button>
+        <button type="button" onclick="document.getElementById('modal-photo').style.display='none'"
+                class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem">
+          Annuler
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
 <style>
-.module-row:hover { background:#f8fafc!important; }
+.membre-row:hover { background:#f8fafc !important; }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Pie chart objectifs
+new Chart(document.getElementById('chartObjectifs'), {
+  type: 'doughnut',
+  data: {
+    labels: {{ chart_data.labels|safe }},
+    datasets: [{
+      data:            {{ chart_data.values|safe }},
+      backgroundColor: {{ chart_data.colors|safe }},
+      borderWidth: 0,
+      hoverOffset: 6
+    }]
+  },
+  options: {
+    cutout: '72%',
+    plugins: { legend: { display: false }, tooltip: { callbacks: {
+      label: function(c) { return ' ' + c.label + ' : ' + c.raw; }
+    }}},
+    animation: { animateRotate: true, duration: 900 }
+  }
+});
+
+// Prévisualisation photo avant upload
+function previewPhoto(input) {
+  if (input.files && input.files[0]) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var prev = document.getElementById('preview-photo');
+      if (prev.tagName === 'IMG') {
+        prev.src = e.target.result;
+      } else {
+        // Remplacer le div par une img
+        var img = document.createElement('img');
+        img.id = 'preview-photo';
+        img.src = e.target.result;
+        img.style = 'width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid {{ sd.couleur }}44';
+        prev.replaceWith(img);
+      }
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+</script>
 {% endblock %}

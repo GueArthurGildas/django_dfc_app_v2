@@ -19,23 +19,21 @@ COULEURS_SD = [
 
 
 class SousDirection(models.Model):
-    code        = models.CharField(max_length=20, unique=True)
-    libelle     = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
-    couleur     = models.CharField(
-        max_length=7, default='#003F7F',
-        choices=COULEURS_SD,
-        help_text="Couleur d'identité visuelle de la sous-direction"
-    )
-    responsable = models.ForeignKey(
+    code            = models.CharField(max_length=20, unique=True)
+    libelle         = models.CharField(max_length=200)
+    description     = models.TextField(blank=True, verbose_name="Description générale")
+    mission         = models.TextField(blank=True, verbose_name="Mission & objectifs stratégiques",
+                                       help_text="Décrivez la mission, les objectifs et les attentes de la sous-direction")
+    couleur         = models.CharField(max_length=7, default='#003F7F', choices=COULEURS_SD)
+    responsable     = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL, null=True, blank=True,
         related_name='sous_directions_responsable'
     )
-    actif       = models.BooleanField(default=True)
-    ordre       = models.PositiveSmallIntegerField(default=0)
-    created_at  = models.DateTimeField(auto_now_add=True)
-    updated_at  = models.DateTimeField(auto_now=True)
+    actif           = models.BooleanField(default=True)
+    ordre           = models.PositiveSmallIntegerField(default=0)
+    created_at      = models.DateTimeField(auto_now_add=True)
+    updated_at      = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['ordre', 'code']
@@ -46,10 +44,9 @@ class SousDirection(models.Model):
         return f"{self.code} — {self.libelle}"
 
     def couleur_texte(self):
-        """Retourne noir ou blanc selon la luminosité de la couleur de fond"""
         hex_col = self.couleur.lstrip('#')
         r, g, b = int(hex_col[0:2], 16), int(hex_col[2:4], 16), int(hex_col[4:6], 16)
-        luminance = (0.299 * r + 0.587 * g + 0.114 * b)
+        luminance = 0.299 * r + 0.587 * g + 0.114 * b
         return '#000000' if luminance > 160 else '#FFFFFF'
 
     def get_modules(self):
@@ -65,35 +62,48 @@ class SousDirection(models.Model):
         return MODULES_PAR_SD.get(self.code, [])
 
     def get_stats(self):
-        """Statistiques panoramiques pour la card portail"""
         from apps.authentication.models import Utilisateur
-        # Membres dans cette SD (via sections)
         nb_membres = Utilisateur.objects.filter(
             sections_lien__section__sous_direction=self,
             est_actif_cie=True
         ).distinct().count()
 
         stats = {
-            'nb_membres':   nb_membres,
-            'nb_sections':  self.sections.filter(actif=True).count(),
-            'nb_activites_ouvertes':  0,
-            'nb_activites_en_retard': 0,
+            'nb_membres':              nb_membres,
+            'nb_sections':             self.sections.filter(actif=True).count(),
+            'nb_activites_ouvertes':   0,
+            'nb_activites_en_retard':  0,
             'nb_activites_en_attente': 0,
+            'nb_activites_cloturees':  0,
+            'taux_completion':         0,
         }
 
-        # Statistiques activités (disponibles en P2)
         try:
             from apps.operations.models import Activite
             from django.utils import timezone
             today = timezone.now().date()
-            activites = Activite.objects.filter(section__sous_direction=self)
-            stats['nb_activites_ouvertes']   = activites.filter(statut__in=['ouverte', 'en_cours']).count()
-            stats['nb_activites_en_retard']  = activites.filter(statut__in=['ouverte', 'en_cours'], date_butoir__lt=today).count()
-            stats['nb_activites_en_attente'] = activites.filter(statut='en_attente').count()
+            qs = Activite.objects.filter(section__sous_direction=self)
+            total = qs.count()
+            cloturees = qs.filter(statut='cloturee').count()
+            stats['nb_activites_ouvertes']   = qs.filter(statut__in=['ouverte', 'en_cours']).count()
+            stats['nb_activites_en_retard']  = qs.filter(statut__in=['ouverte', 'en_cours'], date_butoir__lt=today).count()
+            stats['nb_activites_en_attente'] = qs.filter(statut='en_attente').count()
+            stats['nb_activites_cloturees']  = cloturees
+            stats['taux_completion']         = round(cloturees / total * 100) if total else 0
         except Exception:
-            pass  # Module operations pas encore disponible (P2)
+            pass
 
         return stats
+
+    def get_membres(self):
+        """Retourne les membres actifs de la SD avec leurs infos, triés par niveau de rôle"""
+        from apps.authentication.models import Utilisateur
+        return Utilisateur.objects.filter(
+            sections_lien__section__sous_direction=self,
+            est_actif_cie=True
+        ).select_related('role').prefetch_related('sections_lien__section').distinct().order_by(
+            'role__niveau', 'last_name', 'first_name'
+        )
 
 
 class Section(models.Model):
