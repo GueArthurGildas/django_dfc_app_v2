@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ dossier.titre }}{% endblock %}
+{% block page_title %}{{ dossier.titre }}{% endblock %}
+{% block content %}
+<div class="mb-3 d-flex gap-2">
+  <a href="{% url 'operations:dossier_list' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem"><i class="bi bi-arrow-left me-1"></i>Retour</a>
+  <a href="{% url 'operations:activite_create' %}" class="btn btn-sm" style="background:#003F7F;color:#fff;border-radius:.5rem"><i class="bi bi-plus-lg me-1"></i>Nouvelle activité</a>
+</div>
+<div class="card mb-4" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06);border-top:4px solid {{ dossier.section.sous_direction.couleur }}">
+  <div class="card-body px-4 py-3">
+    <h4 style="font-size:1.1rem;font-weight:700;color:#1a1a2e">{{ dossier.titre }}</h4>
+    <p style="font-size:.88rem;color:#6b7280">{{ dossier.description|default:"—" }}</p>
+    <div class="d-flex gap-4">
+      <div><span style="font-size:1.3rem;font-weight:800;color:#003F7F">{{ dossier.nb_activites }}</span> <span style="font-size:.78rem;color:#9ca3af">activités</span></div>
+      <div><span style="font-size:1.3rem;font-weight:800;color:#28a745">{{ dossier.taux_completion }}%</span> <span style="font-size:.78rem;color:#9ca3af">complété</span></div>
+    </div>
+  </div>
+</div>
+<div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0" style="font-size:.85rem">
+      <thead class="table-light"><tr><th>Titre</th><th>Statut</th><th>Date butoir</th><th>Avancement</th><th></th></tr></thead>
+      <tbody>
+        {% for a in activites %}
+        <tr>
+          <td class="fw-500">{{ a.titre|truncatechars:50 }}</td>
+          <td><span class="badge" style="background:#{{ a.get_statut_display_badge.0 }};color:#{{ a.get_statut_display_badge.1 }}">{{ a.get_statut_display }}</span></td>
+          <td class="{% if a.est_en_retard %}text-danger fw-bold{% endif %}">{{ a.date_butoir|date:"d/m/Y" }}</td>
+          <td><div class="progress" style="height:6px;width:70px"><div class="progress-bar {% if a.etat_avancement < 31 %}bg-danger{% elif a.etat_avancement < 70 %}bg-warning{% else %}bg-success{% endif %}" style="width:{{ a.etat_avancement }}%"></div></div></td>
+          <td><a href="{% url 'operations:activite_detail' a.pk %}" class="btn btn-sm btn-outline-primary" style="font-size:.75rem;border-radius:.4rem">Voir</a></td>
+        </tr>
+        {% empty %}<tr><td colspan="5" class="text-center text-muted py-3">Aucune activité</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

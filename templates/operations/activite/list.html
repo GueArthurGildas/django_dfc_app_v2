@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Activités{% endblock %}
+{% block page_title %}Activités{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="mb-1" style="font-size:1.4rem;font-weight:800;color:#1a1a2e">Toutes les activités</h2>
+    <p class="mb-0" style="font-size:.85rem;color:#6b7280">{{ stats.total }} activité{% if stats.total > 1 %}s{% endif %}</p>
+  </div>
+  <a href="{% url 'operations:activite_create' %}" class="btn btn-sm" style="background:#003F7F;color:#fff;border-radius:.5rem"><i class="bi bi-plus-lg me-1"></i>Nouvelle</a>
+</div>
+
+<!-- Taux indicateurs -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card text-center" style="border:none;border-radius:.75rem;box-shadow:0 1px 6px rgba(0,0,0,.07);border-top:3px solid #28a745">
+      <div class="card-body py-3">
+        <div style="font-size:1.8rem;font-weight:800;color:#28a745">{{ stats.taux_completion }}%</div>
+        <div style="font-size:.72rem;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Complétion</div>
+        <div style="font-size:.75rem;color:#6b7280">{{ stats.cloturees }} / {{ stats.total }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center" style="border:none;border-radius:.75rem;box-shadow:0 1px 6px rgba(0,0,0,.07);border-top:3px solid #003F7F">
+      <div class="card-body py-3">
+        <div style="font-size:1.8rem;font-weight:800;color:#003F7F">{{ stats.taux_delai }}%</div>
+        <div style="font-size:.72rem;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Dans les délais</div>
+        <div style="font-size:.75rem;color:#6b7280">sur clôturées</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center" style="border:none;border-radius:.75rem;box-shadow:0 1px 6px rgba(0,0,0,.07);border-top:3px solid #dc3545">
+      <div class="card-body py-3">
+        <div style="font-size:1.8rem;font-weight:800;color:#dc3545">{{ stats.taux_retard }}%</div>
+        <div style="font-size:.72rem;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.04em">En retard</div>
+        <div style="font-size:.75rem;color:#6b7280">{{ stats.en_retard }} activité{% if stats.en_retard > 1 %}s{% endif %}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center" style="border:none;border-radius:.75rem;box-shadow:0 1px 6px rgba(0,0,0,.07);border-top:3px solid #F5A623">
+      <div class="card-body py-3">
+        <div style="font-size:1.8rem;font-weight:800;color:#F5A623">{{ stats.avancement_moyen }}%</div>
+        <div style="font-size:.72rem;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Avancement moy.</div>
+        <div style="font-size:.75rem;color:#6b7280">toutes activités</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filtres -->
+<div class="card mb-3" style="border:none;border-radius:.75rem;box-shadow:0 1px 6px rgba(0,0,0,.06)">
+  <div class="card-body py-2 px-3">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <span style="font-size:.8rem;font-weight:600;color:#374151"><i class="bi bi-funnel me-1"></i>Filtres</span>
+      <select name="statut" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+        <option value="">Tous statuts</option>
+        <option value="ouverte"    {% if filtre_statut == 'ouverte' %}selected{% endif %}>Ouverte</option>
+        <option value="en_cours"   {% if filtre_statut == 'en_cours' %}selected{% endif %}>En cours</option>
+        <option value="en_attente" {% if filtre_statut == 'en_attente' %}selected{% endif %}>En attente</option>
+        <option value="cloturee"   {% if filtre_statut == 'cloturee' %}selected{% endif %}>Clôturée</option>
+      </select>
+      <select name="sd" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+        <option value="">Toutes les SD</option>
+        {% for sd in sous_directions %}<option value="{{ sd.pk }}" {% if filtre_sd == sd.pk|stringformat:"s" %}selected{% endif %}>{{ sd.code }}</option>{% endfor %}
+      </select>
+      {% if filtre_statut or filtre_sd %}
+      <a href="{% url 'operations:activite_list' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.4rem;font-size:.78rem"><i class="bi bi-x me-1"></i>Effacer</a>
+      {% endif %}
+      <div class="ms-auto d-flex gap-2">
+        {% if filtre_assignee == 'me' %}
+        <a href="{% url 'operations:activite_list' %}" class="btn btn-sm" style="background:#003F7F;color:#fff;border-radius:.4rem;font-size:.78rem"><i class="bi bi-grid me-1"></i>Toutes</a>
+        {% else %}
+        <a href="{% url 'operations:activite_list' %}?assignee=me" class="btn btn-sm btn-outline-primary" style="border-radius:.4rem;font-size:.78rem"><i class="bi bi-person-check me-1"></i>Mes activités</a>
+        {% endif %}
+        <a href="{% url 'operations:activite_kanban' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.4rem;font-size:.78rem"><i class="bi bi-kanban me-1"></i>Kanban</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Table activités -->
+<div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" style="font-size:.83rem">
+        <thead>
+          <tr style="border-bottom:2px solid #f0f0f0">
+            <th class="ps-4" style="font-size:.71rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;border:none;padding:.75rem">Activité</th>
+            <th style="font-size:.71rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;border:none;padding:.75rem">SD / Section</th>
+            <th style="font-size:.71rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;border:none;padding:.75rem">Ouverture</th>
+            <th style="font-size:.71rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;border:none;padding:.75rem">Butoir</th>
+            <th style="font-size:.71rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;border:none;padding:.75rem">Réalisation</th>
+            <th style="font-size:.71rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;border:none;padding:.75rem">Avancement</th>
+            <th style="font-size:.71rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;border:none;padding:.75rem">Statut</th>
+            <th style="font-size:.71rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;border:none;padding:.75rem">Délai</th>
+            <th style="border:none"></th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for a in activites %}
+          {% with bg=a.get_statut_display_badge %}
+          <tr style="border-bottom:1px solid #f8f8f8">
+            <td class="ps-4" style="border:none;padding:.75rem">
+              <div style="font-weight:600;color:#1a1a2e">{{ a.titre|truncatechars:40 }}</div>
+              <div style="font-size:.71rem;color:#9ca3af">{{ a.dossier.titre|truncatechars:28 }}</div>
+            </td>
+            <td style="border:none;padding:.75rem">
+              <span class="badge" style="background:{{ a.section.sous_direction.couleur }};color:{{ a.section.sous_direction.couleur_texte }};font-size:.68rem">{{ a.section.sous_direction.code }}</span>
+              <div style="font-size:.75rem;color:#6b7280;margin-top:.2rem">{{ a.section.code }}</div>
+            </td>
+            <td style="border:none;padding:.75rem;font-size:.8rem;color:#6b7280">{{ a.date_ouverture|date:"d/m/Y" }}</td>
+            <td style="border:none;padding:.75rem">
+              <div style="font-size:.8rem;font-weight:600;color:{% if a.est_en_retard %}#dc2626{% else %}#374151{% endif %}">
+                {{ a.date_butoir|date:"d/m/Y" }}
+                {% if a.est_en_retard %}<i class="bi bi-exclamation-triangle-fill text-danger ms-1" style="font-size:.7rem"></i>{% endif %}
+              </div>
+            </td>
+            <td style="border:none;padding:.75rem;font-size:.8rem;color:#28a745">
+              {% if a.date_realisation %}{{ a.date_realisation|date:"d/m/Y" }}{% else %}<span style="color:#d1d5db">—</span>{% endif %}
+            </td>
+            <td style="border:none;padding:.75rem">
+              <div class="d-flex align-items-center gap-2">
+                <div class="progress" style="height:5px;width:60px;border-radius:3px">
+                  <div class="progress-bar {% if a.etat_avancement < 31 %}bg-danger{% elif a.etat_avancement < 70 %}bg-warning{% else %}bg-success{% endif %}" style="width:{{ a.etat_avancement }}%"></div>
+                </div>
+                <span style="font-size:.75rem;font-weight:700;color:#374151">{{ a.etat_avancement }}%</span>
+              </div>
+            </td>
+            <td style="border:none;padding:.75rem">
+              <span class="badge" style="background:#{{ bg.0 }};color:#{{ bg.1 }};font-size:.71rem;font-weight:600">{{ a.get_statut_display }}</span>
+            </td>
+            <td style="border:none;padding:.75rem">
+              {% if a.statut == 'cloturee' %}
+                {% if a.est_dans_delai %}<span style="font-size:.71rem;background:#d1fae5;color:#065f46;padding:.2rem .5rem;border-radius:.3rem;font-weight:600;white-space:nowrap"><i class="bi bi-check-circle-fill me-1"></i>Délai OK</span>
+                {% elif a.est_dans_delai == False %}<span style="font-size:.71rem;background:#fee2e2;color:#dc2626;padding:.2rem .5rem;border-radius:.3rem;font-weight:600;white-space:nowrap"><i class="bi bi-x-circle-fill me-1"></i>Hors délai</span>
+                {% else %}<span style="color:#9ca3af;font-size:.75rem">—</span>{% endif %}
+              {% elif a.est_en_retard %}
+                <span style="font-size:.71rem;background:#fee2e2;color:#dc2626;padding:.2rem .5rem;border-radius:.3rem;font-weight:600">Retard</span>
+              {% else %}
+                <span style="font-size:.75rem;color:#6b7280">{{ a.jours_restants }}j</span>
+              {% endif %}
+            </td>
+            <td style="border:none;padding:.75rem">
+              <a href="{% url 'operations:activite_detail' a.pk %}" class="btn btn-sm btn-outline-primary" style="font-size:.75rem;border-radius:.4rem">Voir</a>
+            </td>
+          </tr>
+          {% endwith %}
+        {% empty %}
+          <tr><td colspan="9" class="text-center py-5" style="border:none;color:#9ca3af">
+            <i class="bi bi-check2-square display-6 d-block mb-2" style="opacity:.3"></i>Aucune activité
+          </td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

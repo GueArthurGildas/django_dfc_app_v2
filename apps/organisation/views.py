@@ -36,15 +36,17 @@ class SousDirectionDetailView(LoginRequiredMixin, DetailView):
         ctx['peut_modifier']      = self.request.user.role and self.request.user.role.code in ('admin', 'sd')
         # Données pour le pie chart Chart.js
         stats = ctx['stats']
+        # Pie : décomposer ouvertes en retard / dans délai
+        en_cours_ok = max(0, stats['nb_activites_ouvertes'] - stats['nb_activites_en_retard'])
         ctx['chart_data'] = {
-            'labels':      ['Clôturées', 'En cours / Ouvertes', 'En attente', 'En retard'],
-            'values':      [
+            'labels': ['Clôturées', 'En cours (dans délai)', 'En attente', 'En retard'],
+            'values': [
                 stats['nb_activites_cloturees'],
-                stats['nb_activites_ouvertes'],
+                en_cours_ok,
                 stats['nb_activites_en_attente'],
                 stats['nb_activites_en_retard'],
             ],
-            'colors':      ['#28a745', sd.couleur, '#F5A623', '#dc3545'],
+            'colors': ['#28a745', sd.couleur, '#F5A623', '#dc3545'],
         }
         return ctx
 

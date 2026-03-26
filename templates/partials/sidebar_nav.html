@@ -13,11 +13,15 @@
 
 {# ── Opérations ── #}
 <div class="nav-section">Opérations</div>
+<a href="{% url 'operations:activite_list' %}?assignee=me" class="nav-link"
+   style="{% if request.resolver_match.url_name == 'activite_list' and request.GET.assignee == 'me' %}background:rgba(255,255,255,.15);color:#fff;{% endif %}">
+  <i class="bi bi-person-check"></i> Mes activités
+</a>
 <a href="{% url 'operations:dossier_list' %}" class="nav-link {% if request.resolver_match.url_name == 'dossier_list' %}active{% endif %}">
   <i class="bi bi-folder2"></i> Dossiers
 </a>
 <a href="{% url 'operations:activite_list' %}" class="nav-link {% if request.resolver_match.url_name == 'activite_list' %}active{% endif %}">
-  <i class="bi bi-check2-square"></i> Activités
+  <i class="bi bi-check2-square"></i> Toutes les activités
 </a>
 <a href="{% url 'operations:activite_kanban' %}" class="nav-link {% if request.resolver_match.url_name == 'activite_kanban' %}active{% endif %}">
   <i class="bi bi-kanban"></i> Kanban

@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Tableau de Bord{% endblock %}
 {% block page_title %}Tableau de Bord{% endblock %}
+{% load operations_extras %}
 
 {% block content %}
 
-<!-- ══ EN-TÊTE ══════════════════════════════════════════════════════════════ -->
-<div class="d-flex align-items-center justify-content-between mb-4">
+<!-- ══ EN-TÊTE + FILTRE ══════════════════════════════════════════════════════ -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
   <div>
     <h2 class="mb-1" style="font-size:1.5rem;font-weight:800;color:#1a1a2e;letter-spacing:-.02em">
       Bonjour, {{ request.user.first_name|default:request.user.username }} 👋
@@ -13,231 +14,436 @@
     <p class="mb-0" style="font-size:.88rem;color:#6b7280">
       <i class="bi bi-calendar3 me-1"></i>{{ today|date:"l d F Y" }}
       &nbsp;·&nbsp;
-      <span class="badge" style="background:#003F7F22;color:#003F7F;font-weight:600;font-size:.75rem">
-        {{ request.user.role }}
+      <span class="badge" style="background:#003F7F22;color:#003F7F;font-weight:600;font-size:.75rem">{{ request.user.role }}</span>
+      {% if mes_activites.nb_retard > 0 %}
+      &nbsp;·&nbsp;
+      <span class="badge bg-danger" style="font-size:.75rem">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ mes_activites.nb_retard }} de vos activités en retard
       </span>
+      {% endif %}
     </p>
   </div>
+  <form method="get" class="d-flex align-items-center gap-2">
+    <label style="font-size:.82rem;font-weight:600;color:#374151;white-space:nowrap">
+      <i class="bi bi-building me-1" style="color:#003F7F"></i>Sous-Direction
+    </label>
+    <select name="sd" class="form-select form-select-sm" style="width:auto;min-width:160px;border-radius:.5rem" onchange="this.form.submit()">
+      <option value="all" {% if sd_selectionnee == 'all' %}selected{% endif %}>Toutes les SD</option>
+      {% for sd in sous_directions %}
+      <option value="{{ sd.pk }}" {% if sd_selectionnee == sd.pk|stringformat:"s" %}selected{% endif %}>
+        {{ sd.code }} — {{ sd.libelle|truncatechars:25 }}
+      </option>
+      {% endfor %}
+    </select>
+    {% if sd_selectionnee != 'all' %}
+    <a href="{% url 'dashboard:index' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem;font-size:.78rem" title="Réinitialiser">
+      <i class="bi bi-x"></i>
+    </a>
+    {% endif %}
+  </form>
 </div>
 
-<!-- ══ KPI GLOBAUX ═══════════════════════════════════════════════════════════ -->
+
+<!-- ══ MES ACTIVITÉS — FOCUS PERSONNEL ══════════════════════════════════════ -->
+{% if mes_activites.total > 0 %}
+<div class="card mb-4" style="border:none;border-radius:1rem;box-shadow:0 2px 12px rgba(0,0,0,.08);border-left:5px solid #003F7F">
+  <div class="card-body px-4 py-3">
+
+    <!-- En-tête -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div>
+        <h5 style="margin:0;font-size:1rem;font-weight:800;color:#1a1a2e;letter-spacing:-.01em">
+          <i class="bi bi-person-check me-2" style="color:#003F7F"></i>Mes activités
+        </h5>
+        <p style="margin:0;font-size:.78rem;color:#6b7280">
+          Activités où vous êtes responsable ou acteur —
+          <strong style="color:#1a1a2e">{{ mes_activites.total }}</strong> en cours
+          {% if mes_activites.nb_responsable > 0 %}
+          dont <strong style="color:#003F7F">{{ mes_activites.nb_responsable }}</strong> dont vous êtes responsable
+          {% endif %}
+        </p>
+      </div>
+      <a href="{% url 'operations:activite_list' %}?assignee=me" class="btn btn-sm" style="background:#003F7F;color:#fff;border-radius:.5rem;font-size:.78rem">
+        Voir tout <i class="bi bi-arrow-right ms-1"></i>
+      </a>
+    </div>
+
+    <!-- Compteurs rapides -->
+    <div class="d-flex gap-3 mb-3 flex-wrap">
+      {% if mes_activites.nb_retard > 0 %}
+      <div class="d-flex align-items-center gap-2 rounded px-3 py-2" style="background:#fee2e2;border-radius:.6rem">
+        <i class="bi bi-exclamation-triangle-fill" style="color:#dc2626;font-size:1rem"></i>
+        <div>
+          <div style="font-size:1.1rem;font-weight:800;color:#dc2626;line-height:1">{{ mes_activites.nb_retard }}</div>
+          <div style="font-size:.7rem;color:#dc2626;font-weight:600">En retard</div>
+        </div>
+      </div>
+      {% endif %}
+      {% if mes_activites.nb_urgentes > 0 %}
+      <div class="d-flex align-items-center gap-2 rounded px-3 py-2" style="background:#fef3c7;border-radius:.6rem">
+        <i class="bi bi-alarm" style="color:#d97706;font-size:1rem"></i>
+        <div>
+          <div style="font-size:1.1rem;font-weight:800;color:#d97706;line-height:1">{{ mes_activites.nb_urgentes }}</div>
+          <div style="font-size:.7rem;color:#d97706;font-weight:600">Échéance J-7</div>
+        </div>
+      </div>
+      {% endif %}
+      <div class="d-flex align-items-center gap-2 rounded px-3 py-2" style="background:#dbeafe;border-radius:.6rem">
+        <i class="bi bi-list-check" style="color:#1d4ed8;font-size:1rem"></i>
+        <div>
+          <div style="font-size:1.1rem;font-weight:800;color:#1d4ed8;line-height:1">{{ mes_activites.total }}</div>
+          <div style="font-size:.7rem;color:#1d4ed8;font-weight:600">Total actives</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Liste des activités personnelles -->
+    <div class="row g-2">
+
+      <!-- EN RETARD en premier -->
+      {% for a in mes_activites.en_retard %}
+      <div class="col-md-6">
+        <a href="{% url 'operations:activite_detail' a.pk %}" class="text-decoration-none">
+          <div class="rounded-3 p-3 activite-card" style="background:#fff5f5;border:1px solid #fecaca;border-left:4px solid #dc2626;transition:box-shadow .2s">
+            <div class="d-flex align-items-start justify-content-between mb-1">
+              <span style="font-size:.83rem;font-weight:700;color:#1a1a2e;line-height:1.3">{{ a.titre|truncatechars:45 }}</span>
+              {% with lien=a.acteurs.all %}
+              {% for acteur in lien %}{% if acteur.utilisateur == request.user %}
+              <span class="badge ms-1 flex-shrink-0" style="font-size:.65rem;{% if acteur.role_activite == 'responsable' %}background:#dc2626;color:#fff;{% else %}background:#fee2e2;color:#dc2626;{% endif %}">
+                {{ acteur.get_role_activite_display }}
+              </span>
+              {% endif %}{% endfor %}
+              {% endwith %}
+            </div>
+            <div style="font-size:.72rem;color:#9ca3af;margin-bottom:.5rem">{{ a.dossier.titre|truncatechars:35 }}</div>
+            <div class="d-flex align-items-center justify-content-between">
+              <span style="font-size:.75rem;font-weight:700;color:#dc2626">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>Retard de {{ a.jours_restants|abs_value }} jour{% if a.jours_restants|abs_value > 1 %}s{% endif %}
+              </span>
+              <div class="d-flex align-items-center gap-1">
+                <div class="progress" style="height:4px;width:45px;border-radius:2px"><div class="progress-bar bg-danger" style="width:{{ a.etat_avancement }}%"></div></div>
+                <span style="font-size:.72rem;font-weight:700;color:#374151">{{ a.etat_avancement }}%</span>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+
+      <!-- URGENTES (J-7) -->
+      {% for a in mes_activites.urgentes %}
+      <div class="col-md-6">
+        <a href="{% url 'operations:activite_detail' a.pk %}" class="text-decoration-none">
+          <div class="rounded-3 p-3 activite-card" style="background:#fffbeb;border:1px solid #fcd34d;border-left:4px solid #F5A623;transition:box-shadow .2s">
+            <div class="d-flex align-items-start justify-content-between mb-1">
+              <span style="font-size:.83rem;font-weight:700;color:#1a1a2e;line-height:1.3">{{ a.titre|truncatechars:45 }}</span>
+              {% with lien=a.acteurs.all %}
+              {% for acteur in lien %}{% if acteur.utilisateur == request.user %}
+              <span class="badge ms-1 flex-shrink-0" style="font-size:.65rem;{% if acteur.role_activite == 'responsable' %}background:#F5A623;color:#fff;{% else %}background:#fef3c7;color:#92400e;{% endif %}">
+                {{ acteur.get_role_activite_display }}
+              </span>
+              {% endif %}{% endfor %}
+              {% endwith %}
+            </div>
+            <div style="font-size:.72rem;color:#9ca3af;margin-bottom:.5rem">{{ a.dossier.titre|truncatechars:35 }}</div>
+            <div class="d-flex align-items-center justify-content-between">
+              <span style="font-size:.75rem;font-weight:600;color:#d97706">
+                <i class="bi bi-alarm me-1"></i>{{ a.jours_restants }} j restant{% if a.jours_restants > 1 %}s{% endif %}
+              </span>
+              <div class="d-flex align-items-center gap-1">
+                <div class="progress" style="height:4px;width:45px;border-radius:2px"><div class="progress-bar bg-warning" style="width:{{ a.etat_avancement }}%"></div></div>
+                <span style="font-size:.72rem;font-weight:700;color:#374151">{{ a.etat_avancement }}%</span>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+
+      <!-- NORMALES (> J-7) — max 4 -->
+      {% for a in mes_activites.normales|slice:":4" %}
+      <div class="col-md-6">
+        <a href="{% url 'operations:activite_detail' a.pk %}" class="text-decoration-none">
+          <div class="rounded-3 p-3 activite-card" style="background:#fff;border:1px solid #e5e7eb;border-left:4px solid {{ a.section.sous_direction.couleur }};transition:box-shadow .2s">
+            <div class="d-flex align-items-start justify-content-between mb-1">
+              <span style="font-size:.83rem;font-weight:600;color:#1a1a2e;line-height:1.3">{{ a.titre|truncatechars:45 }}</span>
+              {% with lien=a.acteurs.all %}
+              {% for acteur in lien %}{% if acteur.utilisateur == request.user %}
+              <span class="badge ms-1 flex-shrink-0" style="font-size:.65rem;background:{{ a.section.sous_direction.couleur }}18;color:{{ a.section.sous_direction.couleur }}">
+                {{ acteur.get_role_activite_display }}
+              </span>
+              {% endif %}{% endfor %}
+              {% endwith %}
+            </div>
+            <div style="font-size:.72rem;color:#9ca3af;margin-bottom:.5rem">{{ a.dossier.titre|truncatechars:35 }}</div>
+            <div class="d-flex align-items-center justify-content-between">
+              <span style="font-size:.75rem;color:#6b7280">
+                <i class="bi bi-calendar3 me-1"></i>{{ a.date_butoir|date:"d/m/Y" }}
+                <span style="color:#9ca3af">({{ a.jours_restants }}j)</span>
+              </span>
+              <div class="d-flex align-items-center gap-1">
+                <div class="progress" style="height:4px;width:45px;border-radius:2px">
+                  <div class="progress-bar {% if a.etat_avancement < 31 %}bg-danger{% elif a.etat_avancement < 70 %}bg-warning{% else %}bg-success{% endif %}" style="width:{{ a.etat_avancement }}%"></div>
+                </div>
+                <span style="font-size:.72rem;font-weight:700;color:#374151">{{ a.etat_avancement }}%</span>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+
+      {% if mes_activites.normales.count > 4 %}
+      <div class="col-12 text-center pt-1">
+        <a href="{% url 'operations:activite_list' %}?assignee=me" style="font-size:.8rem;color:#003F7F;text-decoration:none">
+          + {{ mes_activites.normales.count|add:"-4" }} autre{% if mes_activites.normales.count > 5 %}s{% endif %} activité{% if mes_activites.normales.count > 5 %}s{% endif %} →
+        </a>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% else %}
+<!-- Aucune activité assignée -->
+<div class="card mb-4" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:5px solid #e5e7eb">
+  <div class="card-body px-4 py-3 d-flex align-items-center gap-3">
+    <div style="width:44px;height:44px;border-radius:50%;background:#f0f9ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <i class="bi bi-person-check" style="color:#0369a1;font-size:1.2rem"></i>
+    </div>
+    <div>
+      <div style="font-size:.9rem;font-weight:700;color:#1a1a2e">Aucune activité assignée</div>
+      <div style="font-size:.8rem;color:#6b7280">Vous n'êtes actuellement responsable ou acteur d'aucune activité active.</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+
+<!-- ══ TAUX GLOBAUX ══════════════════════════════════════════════════════════ -->
 <div class="mb-2" style="font-size:.72rem;font-weight:700;color:#9ca3af;letter-spacing:.08em;text-transform:uppercase">
-  Vue d'ensemble — Activités
+  Vue globale — {% if sd_selectionnee != 'all' %}SD filtrée{% else %}Toutes les sous-directions{% endif %}
 </div>
 <div class="row g-3 mb-4">
-
-  <div class="col-6 col-xl-3">
-    <div class="rounded-3 px-4 py-3 h-100" style="background:linear-gradient(135deg,#003F7F,#0056A8);box-shadow:0 4px 15px rgba(0,63,127,.25)">
-      <div style="font-size:2rem;font-weight:800;color:#fff;line-height:1">{{ stats.ouvertes }}</div>
-      <div style="font-size:.78rem;color:rgba(255,255,255,.8);margin-top:.3rem">
-        <i class="bi bi-folder2-open me-1"></i>Ouvertes
-      </div>
+  <div class="col-6 col-lg-3">
+    <div class="rounded-3 p-3 text-center" style="background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.07);border-top:4px solid #28a745">
+      <div style="font-size:2rem;font-weight:800;color:#28a745;line-height:1">{{ stats.taux_completion }}%</div>
+      <div style="font-size:.7rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin:.2rem 0 .1rem">Complétion</div>
+      <div style="font-size:.75rem;color:#6b7280">{{ stats.cloturees }} / {{ stats.total }}</div>
     </div>
   </div>
-
-  <div class="col-6 col-xl-3">
-    <div class="rounded-3 px-4 py-3 h-100" style="background:linear-gradient(135deg,#F5A623,#e09215);box-shadow:0 4px 15px rgba(245,166,35,.25)">
-      <div style="font-size:2rem;font-weight:800;color:#fff;line-height:1">{{ stats.en_cours }}</div>
-      <div style="font-size:.78rem;color:rgba(255,255,255,.85);margin-top:.3rem">
-        <i class="bi bi-arrow-repeat me-1"></i>En cours
-      </div>
+  <div class="col-6 col-lg-3">
+    <div class="rounded-3 p-3 text-center" style="background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.07);border-top:4px solid #003F7F">
+      <div style="font-size:2rem;font-weight:800;color:#003F7F;line-height:1">{{ stats.taux_delai }}%</div>
+      <div style="font-size:.7rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin:.2rem 0 .1rem">Dans les délais</div>
+      <div style="font-size:.75rem;color:#6b7280">sur clôturées</div>
     </div>
   </div>
-
-  <div class="col-6 col-xl-3">
-    <div class="rounded-3 px-4 py-3 h-100" style="background:linear-gradient(135deg,#dc3545,#b02a37);box-shadow:0 4px 15px rgba(220,53,69,.25)">
-      <div style="font-size:2rem;font-weight:800;color:#fff;line-height:1">{{ stats.en_retard }}</div>
-      <div style="font-size:.78rem;color:rgba(255,255,255,.85);margin-top:.3rem">
-        <i class="bi bi-exclamation-triangle me-1"></i>En retard
-      </div>
+  <div class="col-6 col-lg-3">
+    <div class="rounded-3 p-3 text-center" style="background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.07);border-top:4px solid #dc3545">
+      <div style="font-size:2rem;font-weight:800;color:#dc3545;line-height:1">{{ stats.taux_retard }}%</div>
+      <div style="font-size:.7rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin:.2rem 0 .1rem">En retard</div>
+      <div style="font-size:.75rem;color:#6b7280">{{ stats.en_retard }} activité{% if stats.en_retard > 1 %}s{% endif %}</div>
     </div>
   </div>
-
-  <div class="col-6 col-xl-3">
-    <div class="rounded-3 px-4 py-3 h-100" style="background:linear-gradient(135deg,#28A745,#1e7e34);box-shadow:0 4px 15px rgba(40,167,69,.25)">
-      <div style="font-size:2rem;font-weight:800;color:#fff;line-height:1">{{ stats.cloturees }}</div>
-      <div style="font-size:.78rem;color:rgba(255,255,255,.85);margin-top:.3rem">
-        <i class="bi bi-check-circle me-1"></i>Clôturées ce mois
-      </div>
+  <div class="col-6 col-lg-3">
+    <div class="rounded-3 p-3 text-center" style="background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.07);border-top:4px solid #F5A623">
+      <div style="font-size:2rem;font-weight:800;color:#F5A623;line-height:1">{{ stats.avancement_moyen }}%</div>
+      <div style="font-size:.7rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin:.2rem 0 .1rem">Avancement moy.</div>
+      <div style="font-size:.75rem;color:#6b7280">toutes activités</div>
     </div>
   </div>
-
 </div>
 
-<!-- ══ LIGNE CENTRALE ════════════════════════════════════════════════════════ -->
-<div class="row g-4 mb-4">
+<!-- ══ COMPTEURS STATUTS ══════════════════════════════════════════════════════ -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="rounded-3 px-3 py-2 d-flex align-items-center gap-3" style="background:linear-gradient(135deg,#003F7F,#0056A8);box-shadow:0 4px 15px rgba(0,63,127,.15)">
+      <div><div style="font-size:1.6rem;font-weight:800;color:#fff;line-height:1">{{ stats.ouvertes }}</div><div style="font-size:.72rem;color:rgba(255,255,255,.8)">Ouvertes</div></div>
+      <i class="bi bi-folder2-open ms-auto" style="font-size:1.4rem;color:rgba(255,255,255,.25)"></i>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="rounded-3 px-3 py-2 d-flex align-items-center gap-3" style="background:linear-gradient(135deg,#F5A623,#e09215);box-shadow:0 4px 15px rgba(245,166,35,.15)">
+      <div><div style="font-size:1.6rem;font-weight:800;color:#fff;line-height:1">{{ stats.en_cours }}</div><div style="font-size:.72rem;color:rgba(255,255,255,.85)">En cours</div></div>
+      <i class="bi bi-arrow-repeat ms-auto" style="font-size:1.4rem;color:rgba(255,255,255,.25)"></i>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="rounded-3 px-3 py-2 d-flex align-items-center gap-3" style="background:linear-gradient(135deg,#dc3545,#b02a37);box-shadow:0 4px 15px rgba(220,53,69,.15)">
+      <div><div style="font-size:1.6rem;font-weight:800;color:#fff;line-height:1">{{ stats.en_retard }}</div><div style="font-size:.72rem;color:rgba(255,255,255,.85)">En retard</div></div>
+      <i class="bi bi-exclamation-triangle ms-auto" style="font-size:1.4rem;color:rgba(255,255,255,.25)"></i>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="rounded-3 px-3 py-2 d-flex align-items-center gap-3" style="background:linear-gradient(135deg,#28A745,#1e7e34);box-shadow:0 4px 15px rgba(40,167,69,.15)">
+      <div><div style="font-size:1.6rem;font-weight:800;color:#fff;line-height:1">{{ stats.cloturees }}</div><div style="font-size:.72rem;color:rgba(255,255,255,.85)">Clôturées</div></div>
+      <i class="bi bi-check-circle ms-auto" style="font-size:1.4rem;color:rgba(255,255,255,.25)"></i>
+    </div>
+  </div>
+</div>
 
-  <!-- Graphique donut -->
+<!-- ══ GRAPHIQUES ════════════════════════════════════════════════════════════ -->
+<div class="row g-4 mb-4">
   <div class="col-lg-4">
     <div class="card h-100" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
       <div class="card-body px-4 py-3">
-        <h6 style="font-size:.85rem;font-weight:700;color:#1a1a2e;margin-bottom:.2rem">
-          Répartition par statut
-        </h6>
-        <p style="font-size:.75rem;color:#9ca3af;margin-bottom:1rem">Toutes les activités actives</p>
-        <div class="d-flex align-items-center justify-content-center" style="min-height:180px">
-          <canvas id="chartStatut" style="max-height:180px"></canvas>
+        <h6 style="font-size:.88rem;font-weight:700;color:#1a1a2e;margin-bottom:.1rem">Répartition par statut</h6>
+        <p style="font-size:.75rem;color:#9ca3af;margin-bottom:.75rem">{% if sd_selectionnee != 'all' %}SD filtrée{% else %}Toutes les SD{% endif %}</p>
+        <div class="d-flex align-items-center justify-content-center" style="height:160px">
+          <canvas id="chartStatut"></canvas>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- Sous-directions mini-cards -->
   <div class="col-lg-8">
     <div class="card h-100" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
       <div class="card-body px-4 py-3">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-          <div>
-            <h6 style="font-size:.85rem;font-weight:700;color:#1a1a2e;margin-bottom:.1rem">Sous-Directions</h6>
-            <p style="font-size:.75rem;color:#9ca3af;margin:0">Aperçu rapide par SD</p>
-          </div>
-          <a href="{% url 'organisation:sd_portail' %}" class="btn btn-sm"
-             style="background:#003F7F;color:#fff;border-radius:.5rem;font-size:.75rem">
-            Voir tout
-          </a>
-        </div>
-        <div class="row g-3">
-          {% for sd in sous_directions %}
-          {% with stats=sd.get_stats %}
-          <div class="col-sm-6">
-            <a href="{% url 'organisation:sd_detail' sd.pk %}" class="text-decoration-none">
-              <div class="rounded-3 p-3 sd-mini-card" style="border-left:4px solid {{ sd.couleur }};background:#f8fafc;transition:all .2s">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                  <span class="badge" style="background:{{ sd.couleur }};font-size:.72rem;font-weight:700">{{ sd.code }}</span>
-                  {% if stats.nb_activites_en_retard > 0 %}
-                  <span class="badge ms-auto" style="background:#fee2e2;color:#dc2626;font-size:.65rem">
-                    <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ stats.nb_activites_en_retard }} retard
-                  </span>
-                  {% endif %}
-                </div>
-                <div style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:.4rem">{{ sd.libelle|truncatechars:40 }}</div>
-                <div class="d-flex gap-3">
-                  <div>
-                    <span style="font-size:1rem;font-weight:800;color:{{ sd.couleur }}">{{ stats.nb_membres }}</span>
-                    <span style="font-size:.7rem;color:#9ca3af;margin-left:.2rem">membres</span>
-                  </div>
-                  <div>
-                    <span style="font-size:1rem;font-weight:800;color:{{ sd.couleur }}">{{ stats.nb_sections }}</span>
-                    <span style="font-size:.7rem;color:#9ca3af;margin-left:.2rem">sections</span>
-                  </div>
-                  <div>
-                    <span style="font-size:1rem;font-weight:800;color:{{ sd.couleur }}">{{ stats.nb_activites_ouvertes }}</span>
-                    <span style="font-size:.7rem;color:#9ca3af;margin-left:.2rem">activités</span>
-                  </div>
-                </div>
-              </div>
-            </a>
-          </div>
-          {% endwith %}
-          {% empty %}
-          <div class="col-12 text-center text-muted py-3">
-            <i class="bi bi-building me-1"></i>Aucune sous-direction disponible
-          </div>
-          {% endfor %}
-        </div>
+        <h6 style="font-size:.88rem;font-weight:700;color:#1a1a2e;margin-bottom:.1rem">Comparatif par Sous-Direction</h6>
+        <p style="font-size:.75rem;color:#9ca3af;margin-bottom:.75rem">Taux de complétion et activités en retard</p>
+        <div style="height:160px"><canvas id="chartComparatif"></canvas></div>
       </div>
     </div>
   </div>
-
 </div>
 
-<!-- ══ ACTIVITÉS URGENTES ════════════════════════════════════════════════════ -->
+<!-- ══ SITUATION PAR SD ══════════════════════════════════════════════════════ -->
+{% if sd_cards %}
+<div class="mb-2" style="font-size:.72rem;font-weight:700;color:#9ca3af;letter-spacing:.08em;text-transform:uppercase">Situation par Sous-Direction</div>
+<div class="row g-3 mb-4">
+  {% for s in sd_cards %}
+  <div class="col-md-6">
+    <a href="{% url 'organisation:sd_detail' s.id %}" class="text-decoration-none">
+      <div class="rounded-3 p-3" style="background:#fff;border-left:4px solid {{ s.couleur }};box-shadow:0 1px 6px rgba(0,0,0,.07);transition:box-shadow .2s"
+           onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.12)'" onmouseout="this.style.boxShadow='0 1px 6px rgba(0,0,0,.07)'">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="badge" style="background:{{ s.couleur }};font-size:.75rem;font-weight:700">{{ s.code }}</span>
+          <div class="d-flex gap-2">
+            {% if s.en_retard > 0 %}
+            <span style="font-size:.7rem;background:#fee2e2;color:#dc2626;padding:.15rem .45rem;border-radius:.3rem;font-weight:600">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ s.en_retard }} retard
+            </span>
+            {% endif %}
+            <span style="font-size:.7rem;background:#d1fae5;color:#065f46;padding:.15rem .45rem;border-radius:.3rem;font-weight:600">
+              {{ s.taux_completion }}% complété
+            </span>
+          </div>
+        </div>
+        <div class="progress mb-1" style="height:6px;border-radius:3px;background:#f0f0f0">
+          <div style="width:{{ s.taux_completion }}%;background:{{ s.couleur }};height:100%;border-radius:3px;transition:width .6s"></div>
+        </div>
+        <div class="d-flex justify-content-between mt-1">
+          <span style="font-size:.72rem;color:#9ca3af">{{ s.cloturees }} / {{ s.total }} clôturées</span>
+          <span style="font-size:.72rem;color:#6b7280">Délais : <strong>{{ s.taux_delai }}%</strong></span>
+        </div>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ══ ÉCHÉANCES GLOBALES J-7 ════════════════════════════════════════════════ -->
+{% if activites_urgentes %}
 <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
   <div class="card-body px-4 py-3">
     <div class="d-flex align-items-center justify-content-between mb-3">
       <div>
-        <h6 style="font-size:.85rem;font-weight:700;color:#1a1a2e;margin-bottom:.1rem">
-          <i class="bi bi-alarm me-1 text-danger"></i>Activités — Échéances proches
+        <h6 style="font-size:.88rem;font-weight:700;color:#1a1a2e;margin-bottom:.1rem">
+          <i class="bi bi-alarm me-1 text-danger"></i>Toutes les échéances — J&#8209;7
         </h6>
-        <p style="font-size:.75rem;color:#9ca3af;margin:0">Activités dont la date butoir arrive dans les 7 prochains jours</p>
+        <p style="font-size:.75rem;color:#9ca3af;margin:0">Activités de toutes les sections dont l'échéance approche</p>
       </div>
-      <a href="{% url 'operations:activite_list' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem;font-size:.75rem">
-        Toutes les activités
-      </a>
+      <a href="{% url 'operations:activite_list' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem;font-size:.75rem">Toutes</a>
     </div>
-
-    <div class="table-responsive">
-      <table class="table mb-0" style="font-size:.83rem">
-        <thead>
-          <tr style="border-bottom:2px solid #f0f0f0">
-            <th style="font-size:.72rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;padding:.6rem .75rem;border:none">Activité</th>
-            <th style="font-size:.72rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;padding:.6rem .75rem;border:none">Section</th>
-            <th style="font-size:.72rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;padding:.6rem .75rem;border:none">Date butoir</th>
-            <th style="font-size:.72rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;padding:.6rem .75rem;border:none">Avancement</th>
-            <th style="font-size:.72rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;padding:.6rem .75rem;border:none">Statut</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for a in activites_urgentes %}
-          <tr style="border-bottom:1px solid #f8f8f8">
-            <td style="padding:.75rem;border:none;font-weight:500;color:#1a1a2e">{{ a.titre|truncatechars:40 }}</td>
-            <td style="padding:.75rem;border:none">
-              <span class="badge" style="background:{{ a.section.sous_direction.couleur }}18;color:{{ a.section.sous_direction.couleur }};font-weight:600">
-                {{ a.section.code }}
+    <div class="row g-2">
+      {% for a in activites_urgentes %}
+      <div class="col-md-6">
+        <a href="{% url 'operations:activite_detail' a.pk %}" class="text-decoration-none">
+          <div class="rounded-3 p-2 px-3" style="background:#f8fafc;border-left:3px solid {{ a.section.sous_direction.couleur }};transition:background .15s"
+               onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#f8fafc'">
+            <div class="d-flex align-items-center justify-content-between">
+              <span style="font-size:.82rem;font-weight:600;color:#1a1a2e">{{ a.titre|truncatechars:40 }}</span>
+              <span class="badge ms-1" style="background:{{ a.section.sous_direction.couleur }};color:{{ a.section.sous_direction.couleur_texte }};font-size:.65rem;flex-shrink:0">{{ a.section.sous_direction.code }}</span>
+            </div>
+            <div class="d-flex align-items-center justify-content-between mt-1">
+              <span style="font-size:.74rem;font-weight:700;color:{% if a.est_en_retard %}#dc2626{% else %}#374151{% endif %}">
+                {% if a.est_en_retard %}<i class="bi bi-exclamation-triangle-fill me-1"></i>{% else %}<i class="bi bi-calendar3 me-1 text-muted"></i>{% endif %}
+                {{ a.date_butoir|date:"d/m/Y" }}
               </span>
-            </td>
-            <td style="padding:.75rem;border:none;font-weight:600;color:#dc2626">{{ a.date_butoir|date:"d/m/Y" }}</td>
-            <td style="padding:.75rem;border:none">
-              <div class="d-flex align-items-center gap-2">
-                <div class="progress flex-grow-1" style="height:6px;border-radius:3px;max-width:80px">
-                  <div class="progress-bar {% if a.etat_avancement < 31 %}bg-danger{% elif a.etat_avancement < 70 %}bg-warning{% else %}bg-success{% endif %}"
-                       style="width:{{ a.etat_avancement }}%"></div>
+              <div class="d-flex align-items-center gap-1">
+                <div class="progress" style="height:4px;width:45px;border-radius:2px">
+                  <div class="progress-bar {% if a.etat_avancement < 31 %}bg-danger{% elif a.etat_avancement < 70 %}bg-warning{% else %}bg-success{% endif %}" style="width:{{ a.etat_avancement }}%"></div>
                 </div>
-                <span style="font-size:.75rem;color:#6b7280;min-width:28px">{{ a.etat_avancement }}%</span>
+                <span style="font-size:.72rem;font-weight:700;color:#374151">{{ a.etat_avancement }}%</span>
               </div>
-            </td>
-            <td style="padding:.75rem;border:none">
-              <span class="badge" style="
-                {% if a.statut == 'ouverte' %}background:#dbeafe;color:#1d4ed8;
-                {% elif a.statut == 'en_cours' %}background:#d1fae5;color:#065f46;
-                {% elif a.statut == 'en_attente' %}background:#fef3c7;color:#92400e;
-                {% else %}background:#f3f4f6;color:#6b7280;{% endif %}
-                font-size:.72rem;font-weight:600">
-                {{ a.get_statut_display }}
-              </span>
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="5" class="text-center py-4" style="border:none;color:#9ca3af;font-size:.85rem">
-              <i class="bi bi-check-circle-fill text-success me-1"></i>
-              Aucune activité urgente — tout est sous contrôle
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+            </div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
     </div>
   </div>
 </div>
+{% endif %}
 
 <style>
-.sd-mini-card:hover { background:#eef2ff!important; transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.08); }
+.activite-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.12) !important; }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+const sdData = {{ stats_par_sd|safe }};
+const totalActifs = {{ stats.ouvertes }} + {{ stats.en_cours }};
+const enRetard    = {{ stats.en_retard }};
+const dansDelai   = Math.max(0, totalActifs - enRetard);
+
 new Chart(document.getElementById('chartStatut'), {
   type: 'doughnut',
   data: {
-    labels: ['Ouvertes','En cours','En attente','Clôturées'],
-    datasets: [{
-      data: [{{ stats.ouvertes }}, {{ stats.en_cours }}, {{ stats.en_attente }}, {{ stats.cloturees }}],
-      backgroundColor: ['#003F7F','#F5A623','#6c757d','#28A745'],
-      borderWidth: 0,
-      hoverOffset: 6
+    labels: ['Dans les délais','En attente','Clôturées','En retard'],
+    datasets:[{
+      data: [dansDelai, {{ stats.en_attente }}, {{ stats.cloturees }}, enRetard],
+      backgroundColor: ['#003F7F','#6c757d','#28A745','#dc3545'],
+      borderWidth: 0, hoverOffset: 6
     }]
   },
   options: {
     cutout: '68%',
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: { padding: 14, font: { size: 11, family: 'Inter' }, usePointStyle: true, pointStyleWidth: 8 }
-      }
-    }
+    plugins: { legend: { position: 'bottom', labels: { padding: 12, font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8 } } }
   }
 });
+
+if (sdData.length > 0) {
+  new Chart(document.getElementById('chartComparatif'), {
+    type: 'bar',
+    data: {
+      labels: sdData.map(s => s.code),
+      datasets: [
+        {
+          label: 'Complétion (%)',
+          data: sdData.map(s => s.taux_completion),
+          backgroundColor: sdData.map(s => s.couleur),
+          borderRadius: 6, borderSkipped: false,
+        },
+        {
+          label: 'En retard',
+          data: sdData.map(s => s.en_retard),
+          backgroundColor: '#fee2e2', borderColor: '#dc3545', borderWidth: 1.5,
+          borderRadius: 6, borderSkipped: false, yAxisID: 'y2',
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        y:  { beginAtZero: true, max: 100, grid: { color: '#f5f5f5' }, ticks: { font: { size: 11 }, callback: v => v + '%' } },
+        y2: { beginAtZero: true, position: 'right', grid: { display: false }, ticks: { font: { size: 11 } } }
+      },
+      plugins: { legend: { labels: { font: { size: 11 }, usePointStyle: true } } }
+    }
+  });
+}
 </script>
 {% endblock %}

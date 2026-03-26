@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% block title %}{{ activite.titre }}{% endblock %}
+{% block page_title %}Fiche Activité{% endblock %}
+
+{% block content %}
+<!-- Retour -->
+<div class="mb-4 d-flex gap-2">
+  <a href="{% url 'operations:activite_list' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem"><i class="bi bi-arrow-left me-1"></i>Retour</a>
+  <a href="{% url 'operations:dossier_detail' activite.dossier.pk %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem"><i class="bi bi-folder2 me-1"></i>{{ activite.dossier.titre|truncatechars:25 }}</a>
+</div>
+
+<!-- Bandeau principal -->
+<div class="card mb-4" style="border:none;border-radius:1.25rem;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.1)">
+  <div style="background:{{ activite.section.sous_direction.couleur }};padding:1.5rem 2rem;position:relative">
+    <div class="d-flex align-items-start justify-content-between">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+          <span style="background:rgba(255,255,255,.2);color:{{ activite.section.sous_direction.couleur_texte }};font-size:.72rem;font-weight:700;padding:.2rem .6rem;border-radius:.3rem;letter-spacing:.06em">
+            {{ activite.section.sous_direction.code }} / {{ activite.section.code }}
+          </span>
+          <span class="badge" style="background:#{{ statut_bg }};color:#{{ statut_fg }};font-size:.75rem;font-weight:700">{{ activite.get_statut_display }}</span>
+          {% if activite.est_arrete %}<span style="background:rgba(255,255,255,.2);color:{{ activite.section.sous_direction.couleur_texte }};font-size:.7rem;padding:.15rem .5rem;border-radius:.3rem">Arrêté comptable</span>{% endif %}
+          {% if activite.est_kpi %}<span style="background:rgba(255,255,255,.2);color:{{ activite.section.sous_direction.couleur_texte }};font-size:.7rem;padding:.15rem .5rem;border-radius:.3rem">KPI suivi</span>{% endif %}
+        </div>
+        <h1 style="color:{{ activite.section.sous_direction.couleur_texte }};font-size:1.35rem;font-weight:800;margin:0 0 .4rem;letter-spacing:-.02em;max-width:65ch">{{ activite.titre }}</h1>
+        <div style="color:{{ activite.section.sous_direction.couleur_texte }};opacity:.85;font-size:.82rem">
+          {{ activite.get_type_activite_display }}
+          {% if activite.activite_parente %} — Cloné de #{{ activite.activite_parente.pk }}{% endif %}
+        </div>
+      </div>
+      <div class="d-flex flex-column gap-2">
+        {% if activite.statut != 'cloturee' %}
+        <a href="{% url 'operations:activite_update' activite.pk %}" class="btn btn-sm" style="background:rgba(255,255,255,.2);color:{{ activite.section.sous_direction.couleur_texte }};border:1px solid rgba(255,255,255,.4);border-radius:.5rem;white-space:nowrap"><i class="bi bi-pencil me-1"></i>Modifier</a>
+        {% endif %}
+      </div>
+    </div>
+    <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.07)"></div>
+  </div>
+
+  <!-- Jauge de progression -->
+  <div style="background:#fff;padding:1.25rem 2rem;border-bottom:1px solid #f0f0f0">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <span style="font-size:.82rem;font-weight:700;color:#374151">Avancement global</span>
+      <span style="font-size:1.5rem;font-weight:800;color:{{ activite.couleur_jauge }}">{{ activite.etat_avancement }}%</span>
+    </div>
+    <div class="progress" style="height:12px;border-radius:6px;background:#f0f0f0">
+      <div class="progress-bar" style="width:{{ activite.etat_avancement }}%;background:{{ activite.couleur_jauge }};border-radius:6px;transition:width .6s ease"></div>
+    </div>
+  </div>
+
+  <!-- Barre dates -->
+  <div class="row g-0" style="background:#fff">
+    <div class="col text-center py-3" style="border-right:1px solid #f0f0f0">
+      <div style="font-size:.7rem;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.2rem">Ouverture</div>
+      <div style="font-size:.9rem;font-weight:700;color:#374151">{{ activite.date_ouverture|date:"d/m/Y" }}</div>
+    </div>
+    <div class="col text-center py-3" style="border-right:1px solid #f0f0f0">
+      <div style="font-size:.7rem;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.2rem">Date butoir</div>
+      <div style="font-size:.9rem;font-weight:700;color:{% if activite.est_en_retard %}#dc2626{% else %}#374151{% endif %}">
+        {{ activite.date_butoir|date:"d/m/Y" }}
+        {% if activite.est_en_retard %}<i class="bi bi-exclamation-triangle-fill text-danger ms-1" style="font-size:.8rem"></i>{% endif %}
+      </div>
+    </div>
+    {% if activite.date_intermediaire %}
+    <div class="col text-center py-3" style="border-right:1px solid #f0f0f0">
+      <div style="font-size:.7rem;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.2rem">
+        Date intermédiaire {% if activite.nb_reports > 0 %}<span style="background:#fef3c7;color:#d97706;border-radius:.3rem;padding:.05rem .3rem">{{ activite.nb_reports }} report{% if activite.nb_reports > 1 %}s{% endif %}</span>{% endif %}
+      </div>
+      <div style="font-size:.9rem;font-weight:700;color:#374151">{{ activite.date_intermediaire|date:"d/m/Y" }}</div>
+    </div>
+    {% endif %}
+    <div class="col text-center py-3">
+      <div style="font-size:.7rem;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.2rem">Réalisation</div>
+      {% if activite.date_realisation %}
+        <div style="font-size:.9rem;font-weight:700;color:#28a745">{{ activite.date_realisation|date:"d/m/Y" }}</div>
+        {% if activite.est_dans_delai %}<div style="font-size:.7rem;color:#28a745">✓ Dans les délais</div>
+        {% elif activite.est_dans_delai == False %}<div style="font-size:.7rem;color:#dc2626">✗ Hors délais</div>{% endif %}
+      {% else %}
+        <div style="font-size:.85rem;color:#d1d5db">—</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Colonne gauche : timeline + commentaire -->
+  <div class="col-lg-7">
+
+    <!-- Description -->
+    {% if activite.description %}
+    <div class="card mb-4" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:4px solid {{ activite.section.sous_direction.couleur }}">
+      <div class="card-body px-4 py-3">
+        <h6 style="font-size:.85rem;font-weight:700;color:#1a1a2e;margin-bottom:.5rem"><i class="bi bi-text-paragraph me-2" style="color:{{ activite.section.sous_direction.couleur }}"></i>Description / Objectif</h6>
+        <p style="font-size:.88rem;color:#4b5563;line-height:1.7;margin:0;white-space:pre-line">{{ activite.description }}</p>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Timeline commentaires -->
+    <div class="card mb-4" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid {{ activite.section.sous_direction.couleur }};border-radius:1rem 1rem 0 0">
+        <h6 style="margin:0;font-size:.9rem;font-weight:700;color:#1a1a2e"><i class="bi bi-chat-left-text me-2" style="color:{{ activite.section.sous_direction.couleur }}"></i>Suivi & Commentaires</h6>
+      </div>
+      <div class="card-body px-4 py-3">
+        <!-- Timeline -->
+        {% for c in commentaires %}
+        <div class="d-flex gap-3 mb-3 {% if not forloop.last %}border-bottom pb-3{% endif %}" style="border-color:#f8f8f8">
+          <div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:{{ activite.section.sous_direction.couleur }}18;display:flex;align-items:center;justify-content:center">
+            <span style="font-size:.75rem;font-weight:700;color:{{ activite.section.sous_direction.couleur }}">{{ c.auteur.first_name|first|upper }}{{ c.auteur.last_name|first|upper }}</span>
+          </div>
+          <div class="flex-grow-1">
+            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+              <span style="font-size:.82rem;font-weight:700;color:#1a1a2e">{{ c.auteur.nom_complet }}</span>
+              <span style="font-size:.7rem;color:#9ca3af">{{ c.created_at|date:"d/m/Y H:i" }}</span>
+              <span class="badge" style="font-size:.68rem;
+                {% if c.type_comment == 'cloture' %}background:#d1fae5;color:#065f46;
+                {% elif c.type_comment == 'alerte' %}background:#fee2e2;color:#dc2626;
+                {% elif c.type_comment == 'mise_a_jour' %}background:#dbeafe;color:#1d4ed8;
+                {% else %}background:#f3f4f6;color:#374151;{% endif %}
+                font-weight:600">{{ c.get_type_comment_display }}</span>
+              {% if c.avancement > 0 %}<span style="font-size:.7rem;background:#f3f4f6;color:#374151;padding:.15rem .4rem;border-radius:.3rem">{{ c.avancement }}%</span>{% endif %}
+            </div>
+            <p style="font-size:.85rem;color:#4b5563;margin:0;white-space:pre-line">{{ c.contenu }}</p>
+          </div>
+        </div>
+        {% empty %}
+        <p style="font-size:.85rem;color:#9ca3af;text-align:center;padding:1rem 0">Aucun commentaire pour l'instant.</p>
+        {% endfor %}
+
+        <!-- Formulaire commentaire -->
+        {% if activite.statut != 'cloturee' %}
+        <div class="border-top pt-3 mt-2" style="border-color:#f0f0f0!important">
+          <h6 style="font-size:.82rem;font-weight:700;color:#374151;margin-bottom:.75rem">Ajouter un suivi</h6>
+          <form method="post" action="{% url 'operations:activite_commenter' activite.pk %}">
+            {% csrf_token %}
+            <div class="mb-2">{{ comment_form.type_comment }}</div>
+            <div class="mb-2">{{ comment_form.contenu }}</div>
+            <div class="mb-2">
+              <label style="font-size:.8rem;font-weight:600;color:#374151">Avancement déclaré : <span id="avancement_val">{{ activite.etat_avancement }}%</span></label>
+              <input type="range" name="avancement" class="form-range" min="0" max="100" value="{{ activite.etat_avancement }}"
+                     oninput="document.getElementById('avancement_val').textContent=this.value+'%'">
+            </div>
+            <button type="submit" class="btn btn-sm" style="background:{{ activite.section.sous_direction.couleur }};color:{{ activite.section.sous_direction.couleur_texte }};border-radius:.5rem"><i class="bi bi-send me-1"></i>Enregistrer</button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Historique -->
+    {% if historique %}
+    <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-header px-4 py-3" style="background:#fff;border-radius:1rem 1rem 0 0;border-bottom:1px solid #f0f0f0">
+        <h6 style="margin:0;font-size:.85rem;font-weight:700;color:#1a1a2e"><i class="bi bi-clock-history me-2" style="color:#9ca3af"></i>Historique des modifications</h6>
+      </div>
+      <div class="card-body py-2 px-4">
+        {% for h in historique %}
+        <div class="d-flex align-items-center gap-3 py-2 {% if not forloop.last %}border-bottom{% endif %}" style="border-color:#f8f8f8">
+          <i class="bi bi-arrow-right-short" style="color:#d1d5db"></i>
+          <div style="flex-grow:1">
+            <span style="font-size:.78rem;font-weight:600;color:#374151">{{ h.champ_modifie }}</span>
+            <span style="font-size:.75rem;color:#9ca3af;margin:0 .3rem">:</span>
+            <span style="font-size:.75rem;color:#dc2626;text-decoration:line-through">{{ h.ancienne_valeur|truncatechars:20 }}</span>
+            <i class="bi bi-arrow-right" style="font-size:.65rem;color:#9ca3af;margin:0 .3rem"></i>
+            <span style="font-size:.75rem;color:#28a745;font-weight:600">{{ h.nouvelle_valeur|truncatechars:20 }}</span>
+          </div>
+          <span style="font-size:.7rem;color:#9ca3af;white-space:nowrap">{{ h.created_at|date:"d/m H:i" }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Colonne droite : acteurs + actions -->
+  <div class="col-lg-5 d-flex flex-column gap-4">
+
+    <!-- Actions -->
+    {% if activite.statut != 'cloturee' %}
+    <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid {{ activite.section.sous_direction.couleur }};border-radius:1rem 1rem 0 0">
+        <h6 style="margin:0;font-size:.9rem;font-weight:700;color:#1a1a2e"><i class="bi bi-lightning me-2" style="color:{{ activite.section.sous_direction.couleur }}"></i>Actions</h6>
+      </div>
+      <div class="card-body px-4 py-3 d-flex flex-column gap-3">
+
+        <!-- Clore -->
+        <div>
+          <div style="font-size:.78rem;font-weight:700;color:#374151;margin-bottom:.4rem"><i class="bi bi-check-circle me-1 text-success"></i>Clôturer l'activité</div>
+          <form method="post" action="{% url 'operations:activite_clore' activite.pk %}">{% csrf_token %}
+            {{ clore_form.commentaire }}
+            <div class="mt-2">{{ clore_form.date_realisation }}</div>
+            <button type="submit" class="btn btn-sm mt-2 w-100" style="background:#28a745;color:#fff;border-radius:.5rem" onclick="return confirm('Confirmer la clôture ?')"><i class="bi bi-check-lg me-1"></i>Clôturer</button>
+          </form>
+        </div>
+
+        {% if activite.date_intermediaire %}
+        <div class="border-top pt-3" style="border-color:#f0f0f0!important">
+          <div style="font-size:.78rem;font-weight:700;color:#374151;margin-bottom:.4rem"><i class="bi bi-calendar-event me-1 text-warning"></i>Reporter la date intermédiaire</div>
+          <form method="post" action="{% url 'operations:activite_reporter' activite.pk %}">{% csrf_token %}
+            {{ reporter_form.nouvelle_date }}
+            <div class="mt-2">{{ reporter_form.motif }}</div>
+            <button type="submit" class="btn btn-sm mt-2" style="background:#F5A623;color:#fff;border-radius:.5rem;font-size:.82rem"><i class="bi bi-calendar-x me-1"></i>Reporter</button>
+          </form>
+        </div>
+        {% endif %}
+
+        {% if activite.statut == 'cloturee' and activite.type_activite == 'mensuelle' %}
+        <div class="border-top pt-3" style="border-color:#f0f0f0!important">
+          <form method="post" action="{% url 'operations:activite_cloner' activite.pk %}">{% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-secondary w-100" style="border-radius:.5rem;font-size:.82rem"><i class="bi bi-copy me-1"></i>Cloner (mois suivant)</button>
+          </form>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Acteurs -->
+    <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid {{ activite.section.sous_direction.couleur }};border-radius:1rem 1rem 0 0">
+        <h6 style="margin:0;font-size:.9rem;font-weight:700;color:#1a1a2e"><i class="bi bi-people me-2" style="color:{{ activite.section.sous_direction.couleur }}"></i>Acteurs ({{ acteurs.count }})</h6>
+      </div>
+      <div class="card-body py-2 px-3">
+        {% for acteur in acteurs %}
+        <div class="d-flex align-items-center gap-3 py-2 {% if not forloop.last %}border-bottom{% endif %}" style="border-color:#f8f8f8">
+          <div style="width:38px;height:38px;border-radius:50%;background:{{ activite.section.sous_direction.couleur }}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            {% if acteur.utilisateur.photo %}<img src="{{ acteur.utilisateur.photo.url }}" style="width:38px;height:38px;border-radius:50%;object-fit:cover">
+            {% else %}<span style="font-size:.78rem;font-weight:700;color:{{ activite.section.sous_direction.couleur }}">{{ acteur.utilisateur.first_name|first|upper }}{{ acteur.utilisateur.last_name|first|upper }}</span>{% endif %}
+          </div>
+          <div class="flex-grow-1">
+            <div style="font-size:.85rem;font-weight:600;color:#1a1a2e">{{ acteur.utilisateur.nom_complet }}</div>
+            <div style="font-size:.72rem;color:#9ca3af">{{ acteur.utilisateur.get_section }}</div>
+          </div>
+          <div>
+            <span class="badge" style="font-size:.68rem;{% if acteur.role_activite == 'responsable' %}background:{{ activite.section.sous_direction.couleur }};color:{{ activite.section.sous_direction.couleur_texte }};{% else %}background:#f3f4f6;color:#374151;{% endif %}font-weight:600">{{ acteur.get_role_activite_display }}</span>
+            {% if acteur.peut_recevoir_mail %}<i class="bi bi-envelope-check ms-1" style="color:#28a745;font-size:.75rem" title="Reçoit les emails"></i>{% endif %}
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-center text-muted py-2" style="font-size:.83rem">Aucun acteur affecté</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- PIP -->
+    {% if activite.pips.exists %}
+    <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-header px-4 py-3" style="background:#fff;border-radius:1rem 1rem 0 0;border-bottom:1px solid #f0f0f0">
+        <h6 style="margin:0;font-size:.85rem;font-weight:700;color:#1a1a2e"><i class="bi bi-diagram-3 me-2" style="color:#9ca3af"></i>Partenaires PIP</h6>
+      </div>
+      <div class="card-body py-2 px-3">
+        {% for pip in activite.pips.all %}
+        <div class="d-flex align-items-center gap-2 py-1">
+          <span class="badge" style="background:{{ activite.section.sous_direction.couleur }}18;color:{{ activite.section.sous_direction.couleur }};font-size:.7rem;font-weight:700">{{ pip.code }}</span>
+          <span style="font-size:.82rem;color:#374151">{{ pip.libelle }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

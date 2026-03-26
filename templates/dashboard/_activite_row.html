@@ -1,0 +1,78 @@
+<div class="d-flex align-items-center gap-3 px-4 py-3 activite-row border-bottom"
+     style="border-color:#f5f5f5!important;transition:background .15s">
+
+  <!-- Couleur SD -->
+  <div style="width:4px;height:40px;border-radius:2px;background:{{ activite.section.sous_direction.couleur }};flex-shrink:0"></div>
+
+  <!-- Infos principales -->
+  <div style="flex:1;min-width:0">
+    <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+      <a href="{% url 'operations:activite_detail' activite.pk %}"
+         class="text-decoration-none"
+         style="font-size:.85rem;font-weight:600;color:#1a1a2e;line-height:1.3">
+        {{ activite.titre|truncatechars:55 }}
+      </a>
+      {% if badge_label %}
+      <span style="font-size:.65rem;font-weight:700;background:{{ badge_color }};color:{{ badge_text_color }};padding:.15rem .45rem;border-radius:.3rem;flex-shrink:0;white-space:nowrap">
+        {{ badge_label }}
+      </span>
+      {% endif %}
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <!-- Rôle de l'utilisateur dans cette activité -->
+      {% for acteur in activite.acteurs.all %}
+        {% if acteur.utilisateur == request.user %}
+        <span style="font-size:.68rem;font-weight:700;background:{{ activite.section.sous_direction.couleur }}18;color:{{ activite.section.sous_direction.couleur }};padding:.1rem .4rem;border-radius:.3rem">
+          {% if acteur.role_activite == 'responsable' %}<i class="bi bi-star-fill me-1"></i>{% endif %}
+          {{ acteur.get_role_activite_display }}
+        </span>
+        {% endif %}
+      {% endfor %}
+      <span style="font-size:.72rem;color:#9ca3af">
+        <i class="bi bi-building me-1"></i>{{ activite.section.sous_direction.code }}
+        <span style="margin:0 .25rem">·</span>
+        {{ activite.section.code }}
+      </span>
+      <span style="font-size:.72rem;color:#9ca3af">
+        <i class="bi bi-folder2 me-1"></i>{{ activite.dossier.titre|truncatechars:25 }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Date butoir -->
+  <div style="text-align:right;flex-shrink:0;min-width:85px">
+    <div style="font-size:.8rem;font-weight:700;color:{% if activite.est_en_retard %}#dc2626{% elif activite.jours_restants <= 7 %}#d97706{% else %}#374151{% endif %}">
+      {{ activite.date_butoir|date:"d/m/Y" }}
+    </div>
+    <div style="font-size:.68rem;color:#9ca3af;margin-top:.1rem">
+      {% if activite.est_en_retard %}
+        <span style="color:#dc2626;font-weight:600">
+          {{ activite.jours_restants|cut:"-" }} j de retard
+        </span>
+      {% else %}
+        {{ activite.jours_restants }}j restants
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Jauge + statut -->
+  <div style="flex-shrink:0;width:100px;text-align:center">
+    <div class="progress mb-1" style="height:6px;border-radius:3px">
+      <div class="progress-bar {% if activite.etat_avancement < 31 %}bg-danger{% elif activite.etat_avancement < 70 %}bg-warning{% else %}bg-success{% endif %}"
+           style="width:{{ activite.etat_avancement }}%"></div>
+    </div>
+    <div style="font-size:.72rem;font-weight:700;color:#374151">{{ activite.etat_avancement }}%</div>
+    <div style="font-size:.65rem;color:#9ca3af">{{ activite.get_statut_display }}</div>
+  </div>
+
+  <!-- Lien -->
+  <a href="{% url 'operations:activite_detail' activite.pk %}"
+     class="btn btn-sm btn-outline-primary"
+     style="border-radius:.4rem;font-size:.72rem;flex-shrink:0">
+    Voir
+  </a>
+</div>
+
+<style>
+.activite-row:hover { background:#f8fafc !important; }
+</style>

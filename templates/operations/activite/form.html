@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} une activité{% endblock %}
+{% block page_title %}{{ action }} une activité{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="{% url 'operations:activite_list' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem">
+    <i class="bi bi-arrow-left me-1"></i>Retour
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 12px rgba(0,0,0,.08)">
+      <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid #003F7F;border-radius:1rem 1rem 0 0">
+        <h5 style="margin:0;font-size:1rem;font-weight:700;color:#1a1a2e">
+          <i class="bi bi-check2-square me-2" style="color:#003F7F"></i>{{ action }} une Activité
+        </h5>
+        <p style="margin:0;font-size:.78rem;color:#9ca3af">La section et la sous-direction sont héritées du dossier sélectionné</p>
+      </div>
+
+      <div class="card-body px-4 py-4">
+        <form method="post">
+          {% csrf_token %}
+          <div class="row g-3">
+
+            <!-- Titre -->
+            <div class="col-12">
+              <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">
+                Titre <span class="text-danger">*</span>
+              </label>
+              {{ form.titre }}
+              {% if form.titre.errors %}<div class="text-danger small mt-1">{{ form.titre.errors|join:", " }}</div>{% endif %}
+            </div>
+
+            <!-- Dossier -->
+            <div class="col-12">
+              <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">
+                Dossier <span class="text-danger">*</span>
+              </label>
+              {{ form.dossier }}
+              {% if form.dossier.errors %}<div class="text-danger small mt-1">{{ form.dossier.errors|join:", " }}</div>{% endif %}
+            </div>
+
+            <!-- Section (héritée du dossier — lecture seule) -->
+            <div class="col-12">
+              <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">
+                <i class="bi bi-layers me-1" style="color:#003F7F"></i>Section & Sous-Direction
+                <span class="badge ms-1" style="background:#e0e7ff;color:#4338ca;font-size:.65rem;font-weight:600">Héritées du dossier</span>
+              </label>
+              <div id="section-info" class="rounded px-3 py-2" style="background:#f8fafc;border:1px solid #e5e7eb;font-size:.85rem;min-height:38px;display:flex;align-items:center">
+                <span id="section-text" style="color:#9ca3af;font-style:italic">← Sélectionnez un dossier</span>
+              </div>
+            </div>
+
+            <!-- Type + Dates -->
+            <div class="col-md-4">
+              <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">Type d'activité</label>
+              {{ form.type_activite }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">
+                Date d'ouverture <span class="text-danger">*</span>
+              </label>
+              {{ form.date_ouverture }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">
+                Date butoir <span class="text-danger">*</span>
+              </label>
+              {{ form.date_butoir }}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">Date intermédiaire</label>
+              {{ form.date_intermediaire }}
+              <div style="font-size:.72rem;color:#9ca3af;margin-top:.2rem">Optionnelle — peut être reportée avec motif</div>
+            </div>
+
+            <div class="col-md-6 d-flex align-items-end pb-1">
+              <div class="d-flex gap-4">
+                <div class="form-check">
+                  {{ form.est_kpi }}
+                  <label class="form-check-label" style="font-size:.82rem;font-weight:500">KPI suivi</label>
+                </div>
+                <div class="form-check">
+                  {{ form.est_arrete }}
+                  <label class="form-check-label" style="font-size:.82rem;font-weight:500">Arrêté comptable</label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div class="col-12">
+              <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">Description / Objectif</label>
+              {{ form.description }}
+            </div>
+
+            <!-- Acteurs -->
+            <div class="col-12">
+              <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">Acteurs impliqués</label>
+              {{ form.acteurs_ids }}
+              <div style="font-size:.72rem;color:#9ca3af;margin-top:.3rem">
+                Maintenez <kbd>Ctrl</kbd> (Windows) ou <kbd>⌘</kbd> (Mac) pour sélectionner plusieurs personnes
+              </div>
+            </div>
+
+          </div>
+
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger mt-3" style="font-size:.83rem;border-radius:.5rem">
+            {{ form.non_field_errors }}
+          </div>
+          {% endif %}
+
+          <div class="d-flex gap-2 mt-4 pt-3" style="border-top:1px solid #f0f0f0">
+            <button type="submit" class="btn fw-600" style="background:#003F7F;color:#fff;border-radius:.5rem">
+              <i class="bi bi-check-lg me-1"></i>Enregistrer
+            </button>
+            <a href="{% url 'operations:activite_list' %}" class="btn btn-outline-secondary" style="border-radius:.5rem">
+              Annuler
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Map dossier_id → infos section (passé depuis la vue)
+const DOSSIERS = {{ dossiers_sections|default:"{}" }};
+
+function mettreAJourSection() {
+  const dossierId = document.getElementById('id_dossier').value;
+  const info      = document.getElementById('section-info');
+  const text      = document.getElementById('section-text');
+
+  if (dossierId && DOSSIERS[dossierId]) {
+    const d = DOSSIERS[dossierId];
+    info.style.background  = '#eef2ff';
+    info.style.borderColor = '#6366f1';
+    text.style.color       = '#1a1a2e';
+    text.style.fontStyle   = 'normal';
+    text.innerHTML =
+      '<span class="badge me-2" style="background:#003F7F;font-size:.75rem">' + d.sd_code + '</span>' +
+      '<strong>' + d.section_code + '</strong>' +
+      '<span style="color:#6b7280;margin-left:.4rem">— ' + d.section_libelle + '</span>';
+  } else {
+    info.style.background  = '#f8fafc';
+    info.style.borderColor = '#e5e7eb';
+    text.style.color       = '#9ca3af';
+    text.style.fontStyle   = 'italic';
+    text.innerHTML = '← Sélectionnez un dossier';
+  }
+}
+
+document.getElementById('id_dossier').addEventListener('change', mettreAJourSection);
+// Appliquer au chargement si dossier déjà sélectionné
+document.addEventListener('DOMContentLoaded', mettreAJourSection);
+</script>
+{% endblock %}
