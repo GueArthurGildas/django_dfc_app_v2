@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}{% if object %}Modifier{{ object.code }}{% else %}Nouvelle Sous-Direction{% endif %}{% endblock %}
+{% block page_title %}{% if object %}Modifier — {{ object.code }}{% else %}Nouvelle Sous-Direction{% endif %}{% endblock %}
+
+{% block content %}
+
+<!-- Bouton retour -->
+<div class="mb-4">
+  <a href="{% url 'organisation:sd_portail' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem">
+    <i class="bi bi-arrow-left me-1"></i>Retour aux Sous-Directions
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-md-7 col-lg-6">
+    <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 12px rgba(0,0,0,.08)">
+
+      <!-- En-tête formulaire -->
+      <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid #003F7F;border-radius:1rem 1rem 0 0">
+        <h5 style="margin:0;font-size:1rem;font-weight:700;color:#1a1a2e">
+          <i class="bi bi-building me-2" style="color:#003F7F"></i>
+          {% if object %}Modifier la Sous-Direction{% else %}Créer une Sous-Direction{% endif %}
+        </h5>
+        <p style="margin:0;font-size:.78rem;color:#9ca3af">
+          {% if object %}Modification de {{ object.code }} — {{ object.libelle }}{% else %}Renseignez les informations de la nouvelle SD{% endif %}
+        </p>
+      </div>
+
+      <div class="card-body px-4 py-4">
+        <form method="post">
+          {% csrf_token %}
+
+          {% for field in form %}
+          <div class="mb-3">
+            <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">
+              {{ field.label }}
+              {% if field.field.required %}<span class="text-danger ms-1">*</span>{% endif %}
+            </label>
+
+            {% if field.name == 'couleur' %}
+              <!-- Sélecteur de couleur visuel -->
+              <div class="d-flex flex-wrap gap-2 mt-1">
+                {% for val, label in form.fields.couleur.choices %}
+                <label class="couleur-option" title="{{ label }}"
+                       style="cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:{{ val }};border:3px solid {% if form.instance.couleur == val or not form.instance.pk and val == '#003F7F' %}#333{% else %}transparent{% endif %};transition:border .15s"
+                       onclick="selectCouleur('{{ val }}', this)">
+                  <input type="radio" name="couleur" value="{{ val }}"
+                         {% if form.instance.couleur == val %}checked{% elif not form.instance.pk and val == '#003F7F' %}checked{% endif %}
+                         style="display:none">
+                  {% if form.instance.couleur == val or not form.instance.pk and val == '#003F7F' %}
+                  <i class="bi bi-check" style="color:#fff;font-size:.9rem"></i>
+                  {% endif %}
+                </label>
+                {% endfor %}
+              </div>
+              <div style="font-size:.75rem;color:#9ca3af;margin-top:.4rem">{{ field.help_text }}</div>
+            {% else %}
+              {{ field }}
+            {% endif %}
+
+            {% if field.errors %}
+            <div class="text-danger mt-1" style="font-size:.78rem">{{ field.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+
+          <hr style="border-color:#f0f0f0;margin:1.5rem 0">
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn fw-600" style="background:#003F7F;color:#fff;border-radius:.5rem;font-size:.88rem">
+              <i class="bi bi-check-lg me-1"></i>Enregistrer
+            </button>
+            <a href="{% url 'organisation:sd_portail' %}" class="btn btn-outline-secondary" style="border-radius:.5rem;font-size:.88rem">
+              Annuler
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function selectCouleur(val, el) {
+  // Retirer la sélection précédente
+  document.querySelectorAll('.couleur-option').forEach(function(o) {
+    o.style.border = '3px solid transparent';
+    o.innerHTML = '<input type="radio" name="couleur" value="' + o.querySelector('input').value + '" style="display:none">';
+  });
+  // Marquer la sélection
+  el.style.border = '3px solid #333';
+  var inp = el.querySelector('input');
+  inp.checked = true;
+  el.innerHTML = '<input type="radio" name="couleur" value="' + val + '" checked style="display:none"><i class="bi bi-check" style="color:#fff;font-size:.9rem"></i>';
+}
+</script>
+{% endblock %}

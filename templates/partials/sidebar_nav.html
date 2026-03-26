@@ -1,0 +1,50 @@
+{% load static %}
+
+{# ── Tableau de bord ── #}
+<a href="{% url 'dashboard:index' %}" class="nav-link {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}">
+  <i class="bi bi-speedometer2"></i> Tableau de Bord
+</a>
+
+{# ── Sous-Directions (lien vers la page liste) ── #}
+<div class="nav-section">Structure</div>
+<a href="{% url 'organisation:sd_portail' %}" class="nav-link {% if request.resolver_match.url_name == 'sd_portail' %}active{% endif %}">
+  <i class="bi bi-building"></i> Sous-Directions
+</a>
+
+{# ── Opérations ── #}
+<div class="nav-section">Opérations</div>
+<a href="{% url 'operations:dossier_list' %}" class="nav-link {% if request.resolver_match.url_name == 'dossier_list' %}active{% endif %}">
+  <i class="bi bi-folder2"></i> Dossiers
+</a>
+<a href="{% url 'operations:activite_list' %}" class="nav-link {% if request.resolver_match.url_name == 'activite_list' %}active{% endif %}">
+  <i class="bi bi-check2-square"></i> Activités
+</a>
+<a href="{% url 'operations:activite_kanban' %}" class="nav-link {% if request.resolver_match.url_name == 'activite_kanban' %}active{% endif %}">
+  <i class="bi bi-kanban"></i> Kanban
+</a>
+
+{# ── Comptabilité ── #}
+<div class="nav-section">Comptabilité</div>
+<a href="{% url 'comptabilite:balance_list' %}" class="nav-link">
+  <i class="bi bi-file-earmark-spreadsheet"></i> Balance Générale
+</a>
+<a href="{% url 'comptabilite:grand_livre_list' %}" class="nav-link">
+  <i class="bi bi-journal-text"></i> Grand Livre
+</a>
+
+{# ── Référentiels ── #}
+<div class="nav-section">Référentiels</div>
+<a href="{% url 'organisation:pip_list' %}" class="nav-link">
+  <i class="bi bi-people"></i> Partenaires PIP
+</a>
+
+{# ── Administration (admin uniquement) ── #}
+{% if request.user.role.code == 'admin' %}
+<div class="nav-section">Administration</div>
+<a href="{% url 'organisation:section_list' %}" class="nav-link">
+  <i class="bi bi-layers"></i> Sections
+</a>
+<a href="/admin/" class="nav-link">
+  <i class="bi bi-gear"></i> Admin Django
+</a>
+{% endif %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Mon Profil{% endblock %}
+{% block page_title %}Mon Profil{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-person-circle me-2"></i>Informations du profil
+      </div>
+      <div class="card-body">
+        <dl class="row">
+          <dt class="col-sm-4">Nom complet</dt>
+          <dd class="col-sm-8">{{ user.nom_complet }}</dd>
+          <dt class="col-sm-4">Identifiant</dt>
+          <dd class="col-sm-8">{{ user.username }}</dd>
+          <dt class="col-sm-4">Email</dt>
+          <dd class="col-sm-8">{{ user.email|default:"—" }}</dd>
+          <dt class="col-sm-4">Matricule</dt>
+          <dd class="col-sm-8">{{ user.matricule|default:"—" }}</dd>
+          <dt class="col-sm-4">Rôle</dt>
+          <dd class="col-sm-8"><span class="badge bg-primary">{{ user.role }}</span></dd>
+          <dt class="col-sm-4">Section</dt>
+          <dd class="col-sm-8">{{ user.get_section|default:"—" }}</dd>
+          <dt class="col-sm-4">Sous-Direction</dt>
+          <dd class="col-sm-8">{{ user.get_sous_direction|default:"—" }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

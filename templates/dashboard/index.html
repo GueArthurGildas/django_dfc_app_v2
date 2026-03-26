@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% block title %}Tableau de Bord{% endblock %}
+{% block page_title %}Tableau de Bord{% endblock %}
+
+{% block content %}
+
+<!-- ══ EN-TÊTE ══════════════════════════════════════════════════════════════ -->
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="mb-1" style="font-size:1.5rem;font-weight:800;color:#1a1a2e;letter-spacing:-.02em">
+      Bonjour, {{ request.user.first_name|default:request.user.username }} 👋
+    </h2>
+    <p class="mb-0" style="font-size:.88rem;color:#6b7280">
+      <i class="bi bi-calendar3 me-1"></i>{{ today|date:"l d F Y" }}
+      &nbsp;·&nbsp;
+      <span class="badge" style="background:#003F7F22;color:#003F7F;font-weight:600;font-size:.75rem">
+        {{ request.user.role }}
+      </span>
+    </p>
+  </div>
+</div>
+
+<!-- ══ KPI GLOBAUX ═══════════════════════════════════════════════════════════ -->
+<div class="mb-2" style="font-size:.72rem;font-weight:700;color:#9ca3af;letter-spacing:.08em;text-transform:uppercase">
+  Vue d'ensemble — Activités
+</div>
+<div class="row g-3 mb-4">
+
+  <div class="col-6 col-xl-3">
+    <div class="rounded-3 px-4 py-3 h-100" style="background:linear-gradient(135deg,#003F7F,#0056A8);box-shadow:0 4px 15px rgba(0,63,127,.25)">
+      <div style="font-size:2rem;font-weight:800;color:#fff;line-height:1">{{ stats.ouvertes }}</div>
+      <div style="font-size:.78rem;color:rgba(255,255,255,.8);margin-top:.3rem">
+        <i class="bi bi-folder2-open me-1"></i>Ouvertes
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-xl-3">
+    <div class="rounded-3 px-4 py-3 h-100" style="background:linear-gradient(135deg,#F5A623,#e09215);box-shadow:0 4px 15px rgba(245,166,35,.25)">
+      <div style="font-size:2rem;font-weight:800;color:#fff;line-height:1">{{ stats.en_cours }}</div>
+      <div style="font-size:.78rem;color:rgba(255,255,255,.85);margin-top:.3rem">
+        <i class="bi bi-arrow-repeat me-1"></i>En cours
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-xl-3">
+    <div class="rounded-3 px-4 py-3 h-100" style="background:linear-gradient(135deg,#dc3545,#b02a37);box-shadow:0 4px 15px rgba(220,53,69,.25)">
+      <div style="font-size:2rem;font-weight:800;color:#fff;line-height:1">{{ stats.en_retard }}</div>
+      <div style="font-size:.78rem;color:rgba(255,255,255,.85);margin-top:.3rem">
+        <i class="bi bi-exclamation-triangle me-1"></i>En retard
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-xl-3">
+    <div class="rounded-3 px-4 py-3 h-100" style="background:linear-gradient(135deg,#28A745,#1e7e34);box-shadow:0 4px 15px rgba(40,167,69,.25)">
+      <div style="font-size:2rem;font-weight:800;color:#fff;line-height:1">{{ stats.cloturees }}</div>
+      <div style="font-size:.78rem;color:rgba(255,255,255,.85);margin-top:.3rem">
+        <i class="bi bi-check-circle me-1"></i>Clôturées ce mois
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ LIGNE CENTRALE ════════════════════════════════════════════════════════ -->
+<div class="row g-4 mb-4">
+
+  <!-- Graphique donut -->
+  <div class="col-lg-4">
+    <div class="card h-100" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-body px-4 py-3">
+        <h6 style="font-size:.85rem;font-weight:700;color:#1a1a2e;margin-bottom:.2rem">
+          Répartition par statut
+        </h6>
+        <p style="font-size:.75rem;color:#9ca3af;margin-bottom:1rem">Toutes les activités actives</p>
+        <div class="d-flex align-items-center justify-content-center" style="min-height:180px">
+          <canvas id="chartStatut" style="max-height:180px"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sous-directions mini-cards -->
+  <div class="col-lg-8">
+    <div class="card h-100" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-body px-4 py-3">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <h6 style="font-size:.85rem;font-weight:700;color:#1a1a2e;margin-bottom:.1rem">Sous-Directions</h6>
+            <p style="font-size:.75rem;color:#9ca3af;margin:0">Aperçu rapide par SD</p>
+          </div>
+          <a href="{% url 'organisation:sd_portail' %}" class="btn btn-sm"
+             style="background:#003F7F;color:#fff;border-radius:.5rem;font-size:.75rem">
+            Voir tout
+          </a>
+        </div>
+        <div class="row g-3">
+          {% for sd in sous_directions %}
+          {% with stats=sd.get_stats %}
+          <div class="col-sm-6">
+            <a href="{% url 'organisation:sd_detail' sd.pk %}" class="text-decoration-none">
+              <div class="rounded-3 p-3 sd-mini-card" style="border-left:4px solid {{ sd.couleur }};background:#f8fafc;transition:all .2s">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <span class="badge" style="background:{{ sd.couleur }};font-size:.72rem;font-weight:700">{{ sd.code }}</span>
+                  {% if stats.nb_activites_en_retard > 0 %}
+                  <span class="badge ms-auto" style="background:#fee2e2;color:#dc2626;font-size:.65rem">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ stats.nb_activites_en_retard }} retard
+                  </span>
+                  {% endif %}
+                </div>
+                <div style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:.4rem">{{ sd.libelle|truncatechars:40 }}</div>
+                <div class="d-flex gap-3">
+                  <div>
+                    <span style="font-size:1rem;font-weight:800;color:{{ sd.couleur }}">{{ stats.nb_membres }}</span>
+                    <span style="font-size:.7rem;color:#9ca3af;margin-left:.2rem">membres</span>
+                  </div>
+                  <div>
+                    <span style="font-size:1rem;font-weight:800;color:{{ sd.couleur }}">{{ stats.nb_sections }}</span>
+                    <span style="font-size:.7rem;color:#9ca3af;margin-left:.2rem">sections</span>
+                  </div>
+                  <div>
+                    <span style="font-size:1rem;font-weight:800;color:{{ sd.couleur }}">{{ stats.nb_activites_ouvertes }}</span>
+                    <span style="font-size:.7rem;color:#9ca3af;margin-left:.2rem">activités</span>
+                  </div>
+                </div>
+              </div>
+            </a>
+          </div>
+          {% endwith %}
+          {% empty %}
+          <div class="col-12 text-center text-muted py-3">
+            <i class="bi bi-building me-1"></i>Aucune sous-direction disponible
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ ACTIVITÉS URGENTES ════════════════════════════════════════════════════ -->
+<div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+  <div class="card-body px-4 py-3">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div>
+        <h6 style="font-size:.85rem;font-weight:700;color:#1a1a2e;margin-bottom:.1rem">
+          <i class="bi bi-alarm me-1 text-danger"></i>Activités — Échéances proches
+        </h6>
+        <p style="font-size:.75rem;color:#9ca3af;margin:0">Activités dont la date butoir arrive dans les 7 prochains jours</p>
+      </div>
+      <a href="{% url 'operations:activite_list' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem;font-size:.75rem">
+        Toutes les activités
+      </a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table mb-0" style="font-size:.83rem">
+        <thead>
+          <tr style="border-bottom:2px solid #f0f0f0">
+            <th style="font-size:.72rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;padding:.6rem .75rem;border:none">Activité</th>
+            <th style="font-size:.72rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;padding:.6rem .75rem;border:none">Section</th>
+            <th style="font-size:.72rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;padding:.6rem .75rem;border:none">Date butoir</th>
+            <th style="font-size:.72rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;padding:.6rem .75rem;border:none">Avancement</th>
+            <th style="font-size:.72rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;padding:.6rem .75rem;border:none">Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in activites_urgentes %}
+          <tr style="border-bottom:1px solid #f8f8f8">
+            <td style="padding:.75rem;border:none;font-weight:500;color:#1a1a2e">{{ a.titre|truncatechars:40 }}</td>
+            <td style="padding:.75rem;border:none">
+              <span class="badge" style="background:{{ a.section.sous_direction.couleur }}18;color:{{ a.section.sous_direction.couleur }};font-weight:600">
+                {{ a.section.code }}
+              </span>
+            </td>
+            <td style="padding:.75rem;border:none;font-weight:600;color:#dc2626">{{ a.date_butoir|date:"d/m/Y" }}</td>
+            <td style="padding:.75rem;border:none">
+              <div class="d-flex align-items-center gap-2">
+                <div class="progress flex-grow-1" style="height:6px;border-radius:3px;max-width:80px">
+                  <div class="progress-bar {% if a.etat_avancement < 31 %}bg-danger{% elif a.etat_avancement < 70 %}bg-warning{% else %}bg-success{% endif %}"
+                       style="width:{{ a.etat_avancement }}%"></div>
+                </div>
+                <span style="font-size:.75rem;color:#6b7280;min-width:28px">{{ a.etat_avancement }}%</span>
+              </div>
+            </td>
+            <td style="padding:.75rem;border:none">
+              <span class="badge" style="
+                {% if a.statut == 'ouverte' %}background:#dbeafe;color:#1d4ed8;
+                {% elif a.statut == 'en_cours' %}background:#d1fae5;color:#065f46;
+                {% elif a.statut == 'en_attente' %}background:#fef3c7;color:#92400e;
+                {% else %}background:#f3f4f6;color:#6b7280;{% endif %}
+                font-size:.72rem;font-weight:600">
+                {{ a.get_statut_display }}
+              </span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center py-4" style="border:none;color:#9ca3af;font-size:.85rem">
+              <i class="bi bi-check-circle-fill text-success me-1"></i>
+              Aucune activité urgente — tout est sous contrôle
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+.sd-mini-card:hover { background:#eef2ff!important; transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.08); }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+new Chart(document.getElementById('chartStatut'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Ouvertes','En cours','En attente','Clôturées'],
+    datasets: [{
+      data: [{{ stats.ouvertes }}, {{ stats.en_cours }}, {{ stats.en_attente }}, {{ stats.cloturees }}],
+      backgroundColor: ['#003F7F','#F5A623','#6c757d','#28A745'],
+      borderWidth: 0,
+      hoverOffset: 6
+    }]
+  },
+  options: {
+    cutout: '68%',
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { padding: 14, font: { size: 11, family: 'Inter' }, usePointStyle: true, pointStyleWidth: 8 }
+      }
+    }
+  }
+});
+</script>
+{% endblock %}

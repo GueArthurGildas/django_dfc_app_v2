@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}Sous-Directions{% endblock %}
+{% block page_title %}Sous-Directions{% endblock %}
+
+{% block content %}
+
+<!-- ══ EN-TÊTE DE PAGE ══════════════════════════════════════════════════════ -->
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="mb-1 fw-700" style="color:#1a1a2e;font-size:1.5rem;letter-spacing:-.02em">
+      Vue d'ensemble des Sous-Directions
+    </h2>
+    <p class="text-muted mb-0" style="font-size:.9rem">
+      <i class="bi bi-building me-1"></i>
+      {{ sous_directions|length }} sous-direction{% if sous_directions|length > 1 %}s{% endif %} active{% if sous_directions|length > 1 %}s{% endif %}
+    </p>
+  </div>
+  {% if request.user.role.code == 'admin' %}
+  <a href="{% url 'organisation:sd_create' %}" class="btn btn-sm" style="background:#003F7F;color:#fff;border-radius:.5rem">
+    <i class="bi bi-plus-lg me-1"></i>Nouvelle SD
+  </a>
+  {% endif %}
+</div>
+
+<!-- ══ CARDS SOUS-DIRECTIONS ════════════════════════════════════════════════ -->
+<div class="row g-4">
+{% for sd in sous_directions %}
+{% with stats=sd.get_stats couleur=sd.couleur texte=sd.couleur_texte %}
+  <div class="col-lg-6 col-xl-4">
+    <div class="card h-100 sd-portail-card" style="border:none;border-radius:1rem;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);transition:box-shadow .25s,transform .2s">
+
+      <!-- Bandeau couleur identitaire -->
+      <div style="background:{{ couleur }};padding:1.25rem 1.5rem 1rem;position:relative">
+
+        <!-- Badge code -->
+        <span class="badge mb-2" style="background:rgba(255,255,255,.2);color:{{ texte }};font-size:.75rem;font-weight:600;letter-spacing:.06em;backdrop-filter:blur(4px)">
+          {{ sd.code }}
+        </span>
+
+        <!-- Titre SD -->
+        <h3 style="color:{{ texte }};font-size:1.05rem;font-weight:700;line-height:1.3;margin:0 0 .75rem;letter-spacing:-.01em">
+          {{ sd.libelle }}
+        </h3>
+
+        <!-- Responsable -->
+        <div class="d-flex align-items-center gap-2">
+          {% if sd.responsable and sd.responsable.photo %}
+            <img src="{{ sd.responsable.photo.url }}" alt="{{ sd.responsable.nom_complet }}"
+                 style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.5)">
+          {% else %}
+            <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,.4)">
+              <i class="bi bi-person" style="color:{{ texte }};font-size:.9rem"></i>
+            </div>
+          {% endif %}
+          <div>
+            <div style="color:{{ texte }};font-size:.8rem;font-weight:600;line-height:1.1">
+              {{ sd.responsable.nom_complet|default:"Responsable non défini" }}
+            </div>
+            <div style="color:{{ texte }};opacity:.75;font-size:.72rem">Sous-Directeur</div>
+          </div>
+        </div>
+
+        <!-- Décoration géométrique -->
+        <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.08)"></div>
+        <div style="position:absolute;bottom:-30px;right:20px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.06)"></div>
+      </div>
+
+      <!-- Corps de la card -->
+      <div class="card-body px-4 py-3" style="background:#fff">
+
+        <!-- Description -->
+        {% if sd.description %}
+        <p style="font-size:.83rem;color:#6b7280;line-height:1.5;margin-bottom:1rem">
+          {{ sd.description|truncatechars:110 }}
+        </p>
+        {% endif %}
+
+        <!-- ── KPIs panoramiques ── -->
+        <div style="background:#f8fafc;border-radius:.75rem;padding:.85rem 1rem;margin-bottom:1rem">
+          <div style="font-size:.68rem;font-weight:700;color:#9ca3af;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.6rem">
+            Vue d'ensemble
+          </div>
+          <div class="row g-2 text-center">
+
+            <div class="col-4">
+              <div style="font-size:1.4rem;font-weight:800;color:{{ couleur }};line-height:1">{{ stats.nb_membres }}</div>
+              <div style="font-size:.68rem;color:#6b7280;margin-top:.1rem">Membre{% if stats.nb_membres > 1 %}s{% endif %}</div>
+            </div>
+
+            <div class="col-4" style="border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb">
+              <div style="font-size:1.4rem;font-weight:800;color:{{ couleur }};line-height:1">{{ stats.nb_sections }}</div>
+              <div style="font-size:.68rem;color:#6b7280;margin-top:.1rem">Section{% if stats.nb_sections > 1 %}s{% endif %}</div>
+            </div>
+
+            <div class="col-4">
+              <div style="font-size:1.4rem;font-weight:800;color:{{ couleur }};line-height:1">{{ stats.nb_activites_ouvertes }}</div>
+              <div style="font-size:.68rem;color:#6b7280;margin-top:.1rem">Activité{% if stats.nb_activites_ouvertes > 1 %}s{% endif %}</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── Alertes activités (si données disponibles) ── -->
+        {% if stats.nb_activites_en_retard > 0 or stats.nb_activites_en_attente > 0 %}
+        <div class="d-flex gap-2 mb-3">
+          {% if stats.nb_activites_en_retard > 0 %}
+          <span class="badge d-flex align-items-center gap-1" style="background:#fee2e2;color:#dc2626;font-size:.72rem;font-weight:600;padding:.35rem .65rem;border-radius:.4rem">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            {{ stats.nb_activites_en_retard }} en retard
+          </span>
+          {% endif %}
+          {% if stats.nb_activites_en_attente > 0 %}
+          <span class="badge d-flex align-items-center gap-1" style="background:#fef3c7;color:#d97706;font-size:.72rem;font-weight:600;padding:.35rem .65rem;border-radius:.4rem">
+            <i class="bi bi-hourglass-split"></i>
+            {{ stats.nb_activites_en_attente }} en attente
+          </span>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- ── Modules ── -->
+        <div>
+          <div style="font-size:.68rem;font-weight:700;color:#9ca3af;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.5rem">
+            Modules
+          </div>
+          {% for m in sd.get_modules %}
+          {% if m.disponible %}
+            <a href="{{ m.href }}" class="d-flex align-items-center gap-2 text-decoration-none rounded px-2 py-1 mb-1 module-link"
+               style="background:#f8fafc;transition:background .15s">
+              <span style="width:28px;height:28px;border-radius:.4rem;background:{{ couleur }}22;display:flex;align-items:center;justify-content:center">
+                <i class="{{ m.icone }}" style="color:{{ couleur }};font-size:.8rem"></i>
+              </span>
+              <span style="font-size:.83rem;font-weight:500;color:#374151">{{ m.nom }}</span>
+              <i class="bi bi-arrow-right ms-auto" style="color:#9ca3af;font-size:.75rem"></i>
+            </a>
+          {% else %}
+            <div class="d-flex align-items-center gap-2 rounded px-2 py-1 mb-1"
+                 style="background:#f8fafc;opacity:.55">
+              <span style="width:28px;height:28px;border-radius:.4rem;background:#e5e7eb;display:flex;align-items:center;justify-content:center">
+                <i class="{{ m.icone }}" style="color:#9ca3af;font-size:.8rem"></i>
+              </span>
+              <span style="font-size:.83rem;color:#9ca3af">{{ m.nom }}</span>
+              <span class="ms-auto" style="font-size:.65rem;background:#e5e7eb;color:#6b7280;padding:.15rem .4rem;border-radius:.3rem;font-weight:600">P3</span>
+            </div>
+          {% endif %}
+          {% empty %}
+          <div style="font-size:.8rem;color:#9ca3af;font-style:italic">Aucun module configuré</div>
+          {% endfor %}
+        </div>
+
+      </div>
+
+      <!-- Footer card -->
+      <div class="card-footer d-flex gap-2 px-4 py-3" style="background:#f8fafc;border-top:1px solid #f0f0f0">
+        <a href="{% url 'organisation:sd_detail' sd.pk %}"
+           class="btn btn-sm flex-grow-1 fw-600"
+           style="background:{{ couleur }};color:{{ texte }};border:none;border-radius:.5rem;font-size:.82rem">
+          <i class="bi bi-arrow-right-circle me-1"></i>Accéder
+        </a>
+        {% if request.user.role.code == 'admin' %}
+        <a href="{% url 'organisation:sd_update' sd.pk %}"
+           class="btn btn-sm btn-outline-secondary"
+           style="border-radius:.5rem;font-size:.82rem" title="Modifier">
+          <i class="bi bi-pencil"></i>
+        </a>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+{% endwith %}
+{% empty %}
+  <div class="col-12">
+    <div class="card text-center py-5" style="border-radius:1rem">
+      <div class="card-body text-muted">
+        <i class="bi bi-building display-4 mb-3 d-block"></i>
+        <h5>Aucune sous-direction enregistrée</h5>
+        {% if request.user.role.code == 'admin' %}
+        <a href="{% url 'organisation:sd_create' %}" class="btn btn-primary mt-2">
+          <i class="bi bi-plus-lg me-1"></i>Créer une Sous-Direction
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endfor %}
+</div>
+
+<style>
+.sd-portail-card:hover { box-shadow:0 8px 30px rgba(0,0,0,.14)!important; transform:translateY(-3px); }
+.module-link:hover { background:#eef2ff!important; }
+</style>
+{% endblock %}

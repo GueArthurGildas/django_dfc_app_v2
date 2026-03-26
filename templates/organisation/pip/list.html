@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Partenaires PIP{% endblock %}
+{% block page_title %}Partenaires PIP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0">Partenaires d'Échange (PIP)</h5>
+  {% if request.user.role.code in 'admin,sd,chef' %}
+  <a href="{% url 'organisation:pip_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Nouveau PIP</a>
+  {% endif %}
+</div>
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr><th>Code</th><th>Libellé</th><th>Email</th><th>Téléphone</th><th>SD</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for pip in pips %}
+        <tr>
+          <td><span class="badge bg-secondary">{{ pip.code }}</span></td>
+          <td>{{ pip.libelle }}</td>
+          <td>{{ pip.email|default:"—" }}</td>
+          <td>{{ pip.telephone|default:"—" }}</td>
+          <td>{{ pip.sous_direction.code|default:"—" }}</td>
+          <td>{% if request.user.role.code in 'admin,sd,chef' %}<a href="{% url 'organisation:pip_update' pip.pk %}" class="btn btn-sm btn-outline-secondary">Modifier</a>{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-3">Aucun PIP enregistré</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

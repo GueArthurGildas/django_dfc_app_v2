@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Connexion{% endblock %} — CIE Manager</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --cie-bleu: #003F7F; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #003F7F 0%, #0056A8 60%, #1a7cc1 100%);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    }
+    .auth-card {
+      background: #fff; border-radius: 1rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+      width: 100%; max-width: 420px; padding: 2.5rem;
+    }
+    .auth-logo { text-align: center; margin-bottom: 2rem; }
+    .auth-logo i { font-size: 3rem; color: var(--cie-bleu); }
+    .auth-logo h1 { font-size: 1.5rem; font-weight: 700; color: var(--cie-bleu); margin: .5rem 0 .2rem; }
+    .auth-logo p { color: #6c757d; font-size: .85rem; }
+    .btn-cie { background: var(--cie-bleu); color: #fff; border: none; }
+    .btn-cie:hover { background: #0056A8; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="auth-card">
+    {% block content %}{% endblock %}
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

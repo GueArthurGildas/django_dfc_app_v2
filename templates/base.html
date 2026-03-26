@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}CIE Manager{% endblock %} — DFC/CIE</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --cie-bleu:       #003F7F;
+      --cie-bleu-clair: #0056A8;
+      --cie-or:         #F5A623;
+      --cie-vert:       #28A745;
+      --sidebar-w:      260px;
+      --header-h:       60px;
+    }
+    body { font-family: 'Inter', sans-serif; background: #f0f2f5; }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: var(--sidebar-w); background: var(--cie-bleu);
+      overflow-y: auto; z-index: 1000; transition: width .25s;
+    }
+    #sidebar .sidebar-brand {
+      padding: 1rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,.1);
+      display: flex; align-items: center; gap: .75rem;
+    }
+    #sidebar .sidebar-brand img { width: 38px; }
+    #sidebar .sidebar-brand span { color: #fff; font-weight: 700; font-size: 1rem; line-height: 1.2; }
+
+    #sidebar .nav-section {
+      padding: .5rem 1rem .25rem;
+      font-size: .68rem; font-weight: 600; letter-spacing: .08em;
+      color: rgba(255,255,255,.45); text-transform: uppercase;
+    }
+    #sidebar .nav-link {
+      display: flex; align-items: center; gap: .6rem;
+      color: rgba(255,255,255,.78); padding: .52rem 1.25rem;
+      font-size: .88rem; border-radius: 0; transition: background .15s;
+    }
+    #sidebar .nav-link:hover,
+    #sidebar .nav-link.active { background: rgba(255,255,255,.12); color: #fff; }
+    #sidebar .nav-link i { font-size: 1rem; width: 20px; text-align: center; }
+
+    /* sous-menu SD */
+    #sidebar .sd-submenu .nav-link {
+      padding-left: 2.5rem; font-size: .83rem;
+    }
+    #sidebar .sd-submenu .nav-link i { font-size: .85rem; }
+
+    /* ── Topbar ── */
+    #topbar {
+      position: fixed; top: 0; left: var(--sidebar-w); right: 0;
+      height: var(--header-h); background: #fff;
+      border-bottom: 1px solid #e2e8f0; z-index: 999;
+      display: flex; align-items: center; padding: 0 1.5rem; gap: 1rem;
+    }
+    #topbar .topbar-title { font-weight: 600; color: var(--cie-bleu); flex: 1; }
+    #topbar .badge-notif { background: var(--cie-or); color: #000; font-size: .7rem; }
+
+    /* ── Main ── */
+    #main-content {
+      margin-left: var(--sidebar-w); margin-top: var(--header-h);
+      padding: 1.75rem; min-height: calc(100vh - var(--header-h));
+    }
+
+    /* ── Cards ── */
+    .card { border: none; border-radius: .75rem; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+    .card-header { background: #fff; border-bottom: 1px solid #f0f0f0; font-weight: 600; }
+
+    /* ── KPI cards ── */
+    .kpi-card { border-radius: .75rem; color: #fff; padding: 1.25rem; }
+    .kpi-card .kpi-val { font-size: 2rem; font-weight: 700; }
+    .kpi-card .kpi-label { font-size: .82rem; opacity: .88; }
+
+    /* ── Alerts Django messages ── */
+    .alert { border-radius: .6rem; }
+
+    /* ── Scrollbar sidebar ── */
+    #sidebar::-webkit-scrollbar { width: 4px; }
+    #sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); border-radius: 2px; }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- ══ SIDEBAR ════════════════════════════════════════════════════════════════ -->
+<nav id="sidebar">
+  <div class="sidebar-brand">
+    <i class="bi bi-lightning-charge-fill text-warning fs-4"></i>
+    <span>CIE<br>Manager</span>
+  </div>
+
+  {% include "partials/sidebar_nav.html" %}
+</nav>
+
+<!-- ══ TOPBAR ═════════════════════════════════════════════════════════════════ -->
+<header id="topbar">
+  <span class="topbar-title">{% block page_title %}Tableau de Bord{% endblock %}</span>
+
+  <span class="text-muted small">
+    <i class="bi bi-calendar3 me-1"></i>
+    {{ request.user.get_section }}
+  </span>
+
+  <!-- Notifications -->
+  <a href="#" class="btn btn-sm btn-light position-relative">
+    <i class="bi bi-bell"></i>
+    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill badge-notif">0</span>
+  </a>
+
+  <!-- Profil -->
+  <div class="dropdown">
+    <button class="btn btn-sm btn-light dropdown-toggle d-flex align-items-center gap-2" data-bs-toggle="dropdown">
+      <i class="bi bi-person-circle"></i>
+      {{ request.user.nom_complet }}
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+      <li><span class="dropdown-item-text small text-muted">{{ request.user.role }}</span></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><a class="dropdown-item" href="{% url 'authentication:profil' %}"><i class="bi bi-person me-2"></i>Mon profil</a></li>
+      <li><a class="dropdown-item text-danger" href="{% url 'authentication:logout' %}"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
+    </ul>
+  </div>
+</header>
+
+<!-- ══ CONTENU PRINCIPAL ══════════════════════════════════════════════════════ -->
+<main id="main-content">
+
+  <!-- Messages Django -->
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
+        {{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% block content %}{% endblock %}
+
+</main>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>

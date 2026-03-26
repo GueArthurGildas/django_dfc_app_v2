@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Section {{ section.code }}{% endblock %}
+{% block page_title %}Section {{ section.code }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between">
+    <span>{{ section.code }} — {{ section.libelle }}</span>
+    {% if request.user.role.code in 'admin,sd' %}
+    <a href="{% url 'organisation:section_update' section.pk %}" class="btn btn-sm btn-outline-secondary">Modifier</a>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    <dl class="row">
+      <dt class="col-sm-3">Sous-Direction</dt>
+      <dd class="col-sm-9">{{ section.sous_direction }}</dd>
+      <dt class="col-sm-3">Responsable</dt>
+      <dd class="col-sm-9">{{ section.responsable|default:"—" }}</dd>
+      <dt class="col-sm-3">Description</dt>
+      <dd class="col-sm-9">{{ section.description|default:"—" }}</dd>
+    </dl>
+    <h6 class="mt-3">Membres de la section</h6>
+    <ul class="list-group list-group-flush">
+      {% for lien in section.utilisateurs_lien.select_related %}
+      <li class="list-group-item">{{ lien.utilisateur.nom_complet }} — <span class="text-muted small">{{ lien.utilisateur.role }}</span></li>
+      {% empty %}
+      <li class="list-group-item text-muted">Aucun membre affecté</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

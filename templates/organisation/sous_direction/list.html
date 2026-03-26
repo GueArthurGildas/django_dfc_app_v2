@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Sous-Directions{% endblock %}
+{% block page_title %}Sous-Directions{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0">Liste des Sous-Directions</h5>
+  {% if request.user.role.code == 'admin' %}
+  <a href="{% url 'organisation:sd_create' %}" class="btn btn-sm btn-primary">
+    <i class="bi bi-plus-lg me-1"></i>Nouvelle SD
+  </a>
+  {% endif %}
+</div>
+<div class="row g-3">
+{% for sd in sous_directions %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="badge fs-6" style="background:#003F7F">{{ sd.code }}</span>
+          <span class="fw-600">{{ sd.libelle }}</span>
+        </div>
+        <p class="text-muted small mb-2">{{ sd.description|default:"—"|truncatechars:80 }}</p>
+        <div class="small text-muted">
+          <i class="bi bi-layers me-1"></i>{{ sd.sections.count }} section(s)
+        </div>
+      </div>
+      <div class="card-footer bg-transparent d-flex gap-2">
+        <a href="{% url 'organisation:sd_detail' sd.pk %}" class="btn btn-sm btn-outline-primary">Détail</a>
+        {% if request.user.role.code == 'admin' %}
+        <a href="{% url 'organisation:sd_update' sd.pk %}" class="btn btn-sm btn-outline-secondary">Modifier</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% empty %}
+  <div class="col"><p class="text-muted">Aucune sous-direction enregistrée.</p></div>
+{% endfor %}
+</div>
+{% endblock %}

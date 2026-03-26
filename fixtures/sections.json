@@ -1,0 +1,7 @@
+[
+  {"model":"organisation.section","pk":1,"fields":{"sous_direction":1,"code":"SC-FACT","libelle":"Section Facturation","description":"","responsable":null,"actif":true,"created_at":"2026-01-01T00:00:00Z","updated_at":"2026-01-01T00:00:00Z"}},
+  {"model":"organisation.section","pk":2,"fields":{"sous_direction":1,"code":"SC-RECOV","libelle":"Section Recouvrement","description":"","responsable":null,"actif":true,"created_at":"2026-01-01T00:00:00Z","updated_at":"2026-01-01T00:00:00Z"}},
+  {"model":"organisation.section","pk":3,"fields":{"sous_direction":1,"code":"SC-COM","libelle":"Section Commerciale","description":"","responsable":null,"actif":true,"created_at":"2026-01-01T00:00:00Z","updated_at":"2026-01-01T00:00:00Z"}},
+  {"model":"organisation.section","pk":4,"fields":{"sous_direction":2,"code":"SC-COMPTA","libelle":"Section Comptabilité","description":"","responsable":null,"actif":true,"created_at":"2026-01-01T00:00:00Z","updated_at":"2026-01-01T00:00:00Z"}},
+  {"model":"organisation.section","pk":5,"fields":{"sous_direction":2,"code":"SC-PROJ","libelle":"Section Projets","description":"","responsable":null,"actif":true,"created_at":"2026-01-01T00:00:00Z","updated_at":"2026-01-01T00:00:00Z"}}
+]

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Sections{% endblock %}
+{% block page_title %}Sections{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0">Liste des Sections</h5>
+  {% if request.user.role.code in 'admin,sd' %}
+  <a href="{% url 'organisation:section_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Nouvelle Section</a>
+  {% endif %}
+</div>
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr><th>Code</th><th>Libellé</th><th>Sous-Direction</th><th>Responsable</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for sec in sections %}
+        <tr>
+          <td><span class="badge bg-secondary">{{ sec.code }}</span></td>
+          <td>{{ sec.libelle }}</td>
+          <td><span class="badge" style="background:#003F7F">{{ sec.sous_direction.code }}</span></td>
+          <td>{{ sec.responsable|default:"—" }}</td>
+          <td class="text-end">
+            <a href="{% url 'organisation:section_detail' sec.pk %}" class="btn btn-xs btn-outline-primary btn-sm">Voir</a>
+            {% if request.user.role.code in 'admin,sd' %}
+            <a href="{% url 'organisation:section_update' sec.pk %}" class="btn btn-xs btn-outline-secondary btn-sm">Modifier</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-3">Aucune section</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
