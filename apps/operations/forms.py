@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from .models import Dossier, Activite, CommentaireActivite
+from .models import Dossier, Activite, CommentaireActivite, TypeDocument, DocumentActivite
 
 W  = {'class': 'form-control form-control-sm'}
 WS = {'class': 'form-select form-select-sm'}
@@ -20,14 +20,16 @@ class DossierForm(forms.ModelForm):
 
 
 class ActiviteForm(forms.ModelForm):
-    """
-    La section est héritée du dossier sélectionné.
-    Elle est affichée en lecture seule et remplie automatiquement via JS.
-    """
     acteurs_ids = forms.ModelMultipleChoiceField(
         queryset=Utilisateur.objects.filter(est_actif_cie=True),
         required=False, label="Acteurs impliqués",
         widget=forms.SelectMultiple(attrs={**WS, 'size': '5'})
+    )
+    documents_ids = forms.ModelMultipleChoiceField(
+        queryset=TypeDocument.objects.filter(actif=True).order_by('categorie', 'ordre'),
+        required=False, label="Documents / rendus attendus",
+        widget=forms.CheckboxSelectMultiple(),
+        help_text="Sélectionnez les documents à produire pour cette activité"
     )
 
     class Meta:
@@ -51,9 +53,22 @@ class ActiviteForm(forms.ModelForm):
         cleaned = super().clean()
         dossier = cleaned.get('dossier')
         if dossier:
-            # La section est forcément celle du dossier
             cleaned['section'] = dossier.section
         return cleaned
+
+
+class DocumentActiviteForm(forms.ModelForm):
+    """Mise à jour de l'état d'un document attendu."""
+    class Meta:
+        model  = DocumentActivite
+        fields = ['etat', 'observations', 'date_prevue', 'date_realisation']
+        widgets = {
+            'etat':             forms.Select(attrs=WS),
+            'observations':     forms.Textarea(attrs={**W, 'rows': 2,
+                                'placeholder': 'Observations sur l\'état de production...'}),
+            'date_prevue':      forms.DateInput(attrs={**W, 'type': 'date'}),
+            'date_realisation': forms.DateInput(attrs={**W, 'type': 'date'}),
+        }
 
 
 class CommentaireForm(forms.ModelForm):
@@ -80,8 +95,22 @@ class ReporterDateForm(forms.Form):
 
 
 class CloreForm(forms.Form):
-    commentaire      = forms.CharField(
-        widget=forms.Textarea(attrs={**W, 'rows': 3}),
+    MOTIFS = [
+        ('objectif_atteint', 'Objectif atteint'),
+        ('partiellement',    'Partiellement atteint'),
+        ('non_atteint',      'Objectif non atteint'),
+        ('annule',           'Activité annulée'),
+        ('autre',            'Autre motif'),
+    ]
+    motif = forms.ChoiceField(
+        choices=MOTIFS,
+        widget=forms.RadioSelect(),
+        label="Résultat de l'activité",
+        initial='objectif_atteint'
+    )
+    commentaire = forms.CharField(
+        widget=forms.Textarea(attrs={**W, 'rows': 3,
+        'placeholder': "Décrivez le résultat, les livrables produits, les écarts constatés..."}),
         label="Commentaire de clôture"
     )
     date_realisation = forms.DateField(

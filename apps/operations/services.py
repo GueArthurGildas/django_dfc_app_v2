@@ -75,21 +75,25 @@ class ActiviteService:
         return activite
 
     @staticmethod
-    def clore(activite: Activite, commentaire: str, user) -> Activite:
-        today = timezone.now().date()
-        activite.statut          = 'cloturee'
-        activite.etat_avancement = 100
-        activite.date_realisation = today
-        activite.est_dans_delai   = activite.calculer_est_dans_delai()
-        activite.cloture_par      = user
-        activite.cloture_le       = timezone.now()
+    def clore(activite: Activite, commentaire: str, user, motif: str = 'objectif_atteint', date_realisation=None) -> Activite:
+        from datetime import date as date_type
+        today = date_realisation or timezone.now().date()
+        activite.statut              = 'cloturee'
+        activite.etat_avancement     = 100
+        activite.date_realisation    = today
+        activite.est_dans_delai      = activite.calculer_est_dans_delai()
+        activite.cloture_par         = user
+        activite.cloture_le          = timezone.now()
+        activite.cloture_motif       = motif
+        activite.cloture_commentaire = commentaire
         activite.save(update_fields=[
-            'statut', 'etat_avancement', 'date_realisation',
-            'est_dans_delai', 'cloture_par', 'cloture_le', 'updated_at'
+            'statut', 'etat_avancement', 'date_realisation', 'est_dans_delai',
+            'cloture_par', 'cloture_le', 'cloture_motif', 'cloture_commentaire', 'updated_at'
         ])
+        motif_label = dict(activite.MOTIFS_CLOTURE).get(motif, motif)
         CommentaireActivite.objects.create(
-            activite=activite, auteur=user,
-            type_comment='cloture', contenu=commentaire, avancement=100
+            activite=activite, auteur=user, type_comment='cloture',
+            contenu=f"[{motif_label}] {commentaire}", avancement=100
         )
         HistoriqueActivite.objects.create(
             activite=activite, utilisateur=user,

@@ -8,8 +8,8 @@ from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Avg, Count, Q
 
-from .models import Dossier, Activite, ActiviteActeur, CommentaireActivite
-from .forms import DossierForm, ActiviteForm, CommentaireForm, ReporterDateForm, CloreForm
+from .models import Dossier, Activite, ActiviteActeur, CommentaireActivite, DocumentActivite, TypeDocument
+from .forms import DossierForm, ActiviteForm, CommentaireForm, ReporterDateForm, CloreForm, DocumentActiviteForm
 from .services import ActiviteService
 from apps.organisation.models import SousDirection, Section
 
@@ -143,7 +143,9 @@ class ActiviteDetailView(LoginRequiredMixin, DetailView):
         ctx['commentaires']   = a.commentaires.select_related('auteur').order_by('created_at')
         ctx['historique']     = a.historique.select_related('utilisateur').order_by('-created_at')[:10]
         ctx['comment_form']   = CommentaireForm()
-        ctx['clore_form']     = CloreForm(initial={'date_realisation': timezone.now().date()})
+        ctx['clore_form']     = CloreForm(initial={'date_realisation': timezone.now().date(), 'motif': 'objectif_atteint'})
+        ctx['documents']      = a.documents.select_related('type_document', 'mis_a_jour_par').order_by('type_document__categorie', 'type_document__ordre')
+        ctx['types_documents'] = TypeDocument.objects.filter(actif=True).exclude(pk__in=a.documents.values('type_document_id')).order_by('categorie', 'ordre')
         ctx['reporter_form']  = ReporterDateForm()
         ctx['today']          = timezone.now().date()
         bg, fg = a.get_statut_display_badge()
@@ -172,14 +174,21 @@ class ActiviteCreateView(LoginRequiredMixin, View):
         form = ActiviteForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data.copy()
-            acteurs_ids = [u.pk for u in data.pop('acteurs_ids', [])]
+            acteurs_ids   = [u.pk for u in data.pop('acteurs_ids', [])]
+            documents_ids = [td.pk for td in data.pop('documents_ids', [])]
             data['acteurs_ids'] = acteurs_ids
-            # section forcée depuis le dossier (via form.clean)
-            ActiviteService.creer(data, request.user)
+            activite = ActiviteService.creer(data, request.user)
+            # Créer les DocumentActivite depuis les TypeDocument sélectionnés
+            for td_pk in documents_ids:
+                DocumentActivite.objects.get_or_create(
+                    activite=activite, type_document_id=td_pk,
+                    defaults={'etat': 'non_commence'}
+                )
             messages.success(request, "Activité créée avec succès.")
-            return redirect('operations:activite_list')
+            return redirect('operations:activite_detail', pk=activite.pk)
         dossiers_sections = {
-            str(d.pk): {'section_id': d.section_id, 'section_code': d.section.code, 'section_libelle': d.section.libelle, 'sd_code': d.section.sous_direction.code}
+            str(d.pk): {'section_id': d.section_id, 'section_code': d.section.code,
+                        'section_libelle': d.section.libelle, 'sd_code': d.section.sous_direction.code}
             for d in Dossier.objects.select_related('section__sous_direction').all()
         }
         return render(request, self.template_name, {'form': form, 'action': 'Créer', 'dossiers_sections': dossiers_sections})
@@ -219,9 +228,13 @@ class CloreActiviteView(LoginRequiredMixin, View):
         form = CloreForm(request.POST)
         if form.is_valid():
             d = form.cleaned_data
-            activite.date_realisation = d['date_realisation']
-            ActiviteService.clore(activite, d['commentaire'], request.user)
+            ActiviteService.clore(
+                activite, d['commentaire'], request.user,
+                motif=d['motif'], date_realisation=d['date_realisation']
+            )
             messages.success(request, "Activité clôturée.")
+        else:
+            messages.error(request, "Veuillez corriger les erreurs du formulaire de clôture.")
         return redirect('operations:activite_detail', pk=pk)
 
 
@@ -285,6 +298,70 @@ class ActiviteKanbanView(LoginRequiredMixin, View):
         }
         return render(request, self.template_name, context)
 
+
+class AjouterDocumentActiviteView(LoginRequiredMixin, View):
+    """Ajoute un document attendu depuis la fiche activité."""
+    def post(self, request, pk):
+        activite  = get_object_or_404(Activite, pk=pk)
+        td_pk     = request.POST.get('type_document_id')
+        if td_pk:
+            td = get_object_or_404(TypeDocument, pk=td_pk, actif=True)
+            DocumentActivite.objects.get_or_create(
+                activite=activite, type_document=td,
+                defaults={'etat': 'non_commence'}
+            )
+            messages.success(request, f"Document « {td.libelle} » ajouté.")
+        return redirect('operations:activite_detail', pk=pk)
+
+
+
+class ChangerStatutDocView(LoginRequiredMixin, View):
+    """Met à jour l'état d'un DocumentActivite via POST AJAX."""
+    def post(self, request, pk, doc_pk):
+        import json as _json
+        doc = get_object_or_404(DocumentActivite, pk=doc_pk, activite_id=pk)
+        try:
+            data = _json.loads(request.body)
+        except Exception:
+            data = {}
+        etat         = data.get('etat') or request.POST.get('etat')
+        observations = data.get('observations', '')
+        date_prev    = data.get('date_prevue')
+        date_real    = data.get('date_realisation')
+
+        if etat not in dict(DocumentActivite.ETATS):
+            return JsonResponse({'error': 'État invalide'}, status=400)
+
+        doc.etat         = etat
+        doc.observations = observations or doc.observations
+        if date_real:
+            from datetime import datetime
+            try:
+                doc.date_realisation = datetime.strptime(date_real, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+        doc.mis_a_jour_par = request.user
+        doc.mis_a_jour_le  = timezone.now()
+        doc.save(update_fields=['etat', 'observations', 'date_realisation', 'mis_a_jour_par', 'mis_a_jour_le'])
+
+        bg, fg = doc.couleur_etat
+        return JsonResponse({
+            'ok':    True,
+            'etat':  etat,
+            'label': doc.get_etat_display(),
+            'bg':    bg,
+            'fg':    fg,
+        })
+
+
+class SupprimerDocView(LoginRequiredMixin, View):
+    """Retire un document attendu d'une activité."""
+    def post(self, request, pk, doc_pk):
+        doc = get_object_or_404(DocumentActivite, pk=doc_pk, activite_id=pk)
+        libelle = doc.type_document.libelle
+        doc.delete()
+        messages.success(request, f"Document « {libelle} » retiré.")
+        return redirect('operations:activite_detail', pk=pk)
 
 # ── API JSON Dashboard ────────────────────────────────────────────────────────
 

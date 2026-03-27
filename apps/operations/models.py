@@ -78,8 +78,17 @@ class Activite(models.Model):
     mois_reference   = models.CharField(max_length=7, blank=True, help_text="YYYY-MM")
 
     # Clôture
-    cloture_par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='activites_cloturees')
-    cloture_le  = models.DateTimeField(null=True, blank=True)
+    MOTIFS_CLOTURE = [
+        ('objectif_atteint', 'Objectif atteint ✓'),
+        ('partiellement',    'Partiellement atteint'),
+        ('non_atteint',      'Objectif non atteint'),
+        ('annule',           'Activité annulée'),
+        ('autre',            'Autre motif'),
+    ]
+    cloture_par         = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='activites_cloturees')
+    cloture_le          = models.DateTimeField(null=True, blank=True)
+    cloture_motif       = models.CharField(max_length=30, choices=MOTIFS_CLOTURE, null=True, blank=True, verbose_name="Motif de clôture")
+    cloture_commentaire = models.TextField(blank=True, verbose_name="Commentaire de clôture")
 
     created_by  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='activites_creees')
     created_at  = models.DateTimeField(auto_now_add=True)
@@ -214,3 +223,84 @@ class AlerteMail(models.Model):
     class Meta:
         ordering = ['-envoye_le']
         verbose_name = 'Alerte mail'
+
+
+class TypeDocument(models.Model):
+    """
+    Référentiel des documents/rendus attendus.
+    Géré par l'admin — sert de base pour les sélections lors de la création d'activité.
+    """
+    CATEGORIES = [
+        ('rapport',      'Rapport'),
+        ('balance',      'Balance / État comptable'),
+        ('grand_livre',  'Grand Livre'),
+        ('facture',      'Facture / Bordereau'),
+        ('tableau',      'Tableau de bord / Synthèse'),
+        ('proces_verbal','Procès-verbal / Compte-rendu'),
+        ('situation',    'Situation financière'),
+        ('autre',        'Autre document'),
+    ]
+    code        = models.CharField(max_length=30, unique=True)
+    libelle     = models.CharField(max_length=300)
+    categorie   = models.CharField(max_length=30, choices=CATEGORIES, default='autre')
+    description = models.TextField(blank=True, help_text="Précisions sur ce type de document")
+    actif       = models.BooleanField(default=True)
+    ordre       = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['categorie', 'ordre', 'libelle']
+        verbose_name = 'Type de document'
+        verbose_name_plural = 'Types de documents'
+
+    def __str__(self):
+        return f"[{self.get_categorie_display()}] {self.libelle}"
+
+
+class DocumentActivite(models.Model):
+    """
+    Rendu attendu pour une activité spécifique.
+    Créé depuis le référentiel TypeDocument lors de la création de l'activité.
+    L'état d'avancement est mis à jour par les responsables pendant le traitement.
+    """
+    ETATS = [
+        ('non_commence', 'Non commencé'),
+        ('en_cours',     'En cours de production'),
+        ('finalise',     'Finalisé'),
+        ('valide',       'Validé'),
+        ('non_produit',  'Non produit'),
+    ]
+    activite        = models.ForeignKey(Activite, on_delete=models.CASCADE, related_name='documents')
+    type_document   = models.ForeignKey(TypeDocument, on_delete=models.PROTECT, related_name='activite_docs')
+    etat            = models.CharField(max_length=20, choices=ETATS, default='non_commence')
+    observations    = models.TextField(blank=True, help_text="Commentaires sur l'état de production")
+    date_prevue     = models.DateField(null=True, blank=True, verbose_name="Date de production prévue")
+    date_realisation= models.DateField(null=True, blank=True, verbose_name="Date de réalisation effective")
+    mis_a_jour_par  = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='documents_mis_a_jour'
+    )
+    mis_a_jour_le   = models.DateTimeField(null=True, blank=True)
+    created_at      = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['type_document__categorie', 'type_document__ordre']
+        unique_together = [('activite', 'type_document')]
+        verbose_name = 'Document attendu'
+        verbose_name_plural = 'Documents attendus'
+
+    def __str__(self):
+        return f"{self.type_document.libelle} — {self.get_etat_display()}"
+
+    @property
+    def est_produit(self):
+        return self.etat in ('finalise', 'valide')
+
+    @property
+    def couleur_etat(self):
+        return {
+            'non_commence': ('#f3f4f6', '#6b7280'),
+            'en_cours':     ('#dbeafe', '#1d4ed8'),
+            'finalise':     ('#d1fae5', '#065f46'),
+            'valide':       ('#d1fae5', '#065f46'),
+            'non_produit':  ('#fee2e2', '#dc2626'),
+        }.get(self.etat, ('#f3f4f6', '#6b7280'))

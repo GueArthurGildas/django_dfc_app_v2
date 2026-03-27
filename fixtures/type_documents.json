@@ -1,0 +1,17 @@
+[
+  {"model":"operations.typedocument","pk":1,"fields":{"code":"BAL-GEN","libelle":"Balance Générale","categorie":"balance","description":"Balance générale de la période comptable","actif":true,"ordre":1}},
+  {"model":"operations.typedocument","pk":2,"fields":{"code":"BAL-AUX","libelle":"Balance Auxiliaire","categorie":"balance","description":"Balance auxiliaire clients et fournisseurs","actif":true,"ordre":2}},
+  {"model":"operations.typedocument","pk":3,"fields":{"code":"GRAND-LIV","libelle":"Grand Livre","categorie":"grand_livre","description":"Grand Livre des comptes de la période","actif":true,"ordre":1}},
+  {"model":"operations.typedocument","pk":4,"fields":{"code":"GRAND-LIV-AUX","libelle":"Grand Livre Auxiliaire","categorie":"grand_livre","description":"Grand Livre auxiliaire clients/fournisseurs","actif":true,"ordre":2}},
+  {"model":"operations.typedocument","pk":5,"fields":{"code":"RAPP-FACT","libelle":"Rapport de Facturation","categorie":"rapport","description":"Rapport mensuel de facturation","actif":true,"ordre":1}},
+  {"model":"operations.typedocument","pk":6,"fields":{"code":"RAPP-RECAP","libelle":"Rapport de Récapitulation","categorie":"rapport","description":"Récapitulatif des opérations de la période","actif":true,"ordre":2}},
+  {"model":"operations.typedocument","pk":7,"fields":{"code":"SYNTH-CA","libelle":"Synthèse Chiffre d'Affaires","categorie":"tableau","description":"Tableau de synthèse du CA énergie","actif":true,"ordre":1}},
+  {"model":"operations.typedocument","pk":8,"fields":{"code":"TAB-BORD","libelle":"Tableau de Bord Mensuel","categorie":"tableau","description":"Tableau de bord des indicateurs clés","actif":true,"ordre":2}},
+  {"model":"operations.typedocument","pk":9,"fields":{"code":"FACT-CLI","libelle":"État des Factures Clients","categorie":"facture","description":"Liste et état des factures émises aux clients","actif":true,"ordre":1}},
+  {"model":"operations.typedocument","pk":10,"fields":{"code":"BORD-RECOV","libelle":"Bordereau de Recouvrement","categorie":"facture","description":"Bordereau des encaissements et recouvrement","actif":true,"ordre":2}},
+  {"model":"operations.typedocument","pk":11,"fields":{"code":"SITU-TRESOR","libelle":"Situation de Trésorerie","categorie":"situation","description":"État de la trésorerie à la date d'arrêté","actif":true,"ordre":1}},
+  {"model":"operations.typedocument","pk":12,"fields":{"code":"SITU-IMPAYES","libelle":"Situation des Impayés","categorie":"situation","description":"État des créances impayées et ancienneté","actif":true,"ordre":2}},
+  {"model":"operations.typedocument","pk":13,"fields":{"code":"PV-ARRETE","libelle":"Procès-Verbal d'Arrêté","categorie":"proces_verbal","description":"PV de validation de l'arrêté comptable","actif":true,"ordre":1}},
+  {"model":"operations.typedocument","pk":14,"fields":{"code":"CR-REUNION","libelle":"Compte-Rendu de Réunion","categorie":"proces_verbal","description":"CR des réunions de suivi et coordination","actif":true,"ordre":2}},
+  {"model":"operations.typedocument","pk":15,"fields":{"code":"NOTE-SYN","libelle":"Note de Synthèse","categorie":"autre","description":"Note de synthèse analytique","actif":true,"ordre":1}}
+]

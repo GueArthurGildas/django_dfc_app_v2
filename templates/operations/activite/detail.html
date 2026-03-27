@@ -176,45 +176,255 @@
   <!-- Colonne droite : acteurs + actions -->
   <div class="col-lg-5 d-flex flex-column gap-4">
 
-    <!-- Actions -->
+        <!-- ══ DOCUMENTS ATTENDUS ═════════════════════════════════════ -->
+    <div class="card mb-4" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid {{ activite.section.sous_direction.couleur }};border-radius:1rem 1rem 0 0">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h6 style="margin:0;font-size:.9rem;font-weight:700;color:#1a1a2e">
+              <i class="bi bi-file-earmark-text me-2" style="color:{{ activite.section.sous_direction.couleur }}"></i>
+              Documents attendus
+              <span class="badge ms-1" style="background:{{ activite.section.sous_direction.couleur }};color:{{ activite.section.sous_direction.couleur_texte }};font-size:.68rem">{{ documents.count }}</span>
+            </h6>
+            <p style="margin:0;font-size:.73rem;color:#9ca3af">Rendus à produire pour cette activité</p>
+          </div>
+          <!-- Ajouter un document depuis le référentiel -->
+          {% if activite.statut != 'cloturee' and types_documents %}
+          <div class="dropdown">
+            <button class="btn btn-sm dropdown-toggle" style="background:{{ activite.section.sous_direction.couleur }};color:{{ activite.section.sous_direction.couleur_texte }};border-radius:.5rem;font-size:.78rem" data-bs-toggle="dropdown">
+              <i class="bi bi-plus-lg me-1"></i>Ajouter
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width:280px;font-size:.83rem;border-radius:.75rem;padding:.5rem">
+              {% regroup types_documents by get_categorie_display as cats %}
+              {% for cat in cats %}
+              <li><span class="dropdown-item-text" style="font-size:.68rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;padding:.25rem .75rem">{{ cat.grouper }}</span></li>
+              {% for td in cat.list %}
+              <li>
+                <form method="post" action="{% url 'operations:document_ajouter' activite.pk %}" class="d-inline w-100">
+                  {% csrf_token %}
+                  <input type="hidden" name="type_document_id" value="{{ td.pk }}">
+                  <button type="submit" class="dropdown-item px-3 py-1" style="font-size:.82rem;border-radius:.4rem">
+                    <i class="bi bi-file-earmark-plus me-2 text-muted"></i>{{ td.libelle }}
+                  </button>
+                </form>
+              </li>
+              {% endfor %}
+              {% if not forloop.last %}<li><hr class="dropdown-divider my-1"></li>{% endif %}
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Liste des documents avec switch d'état -->
+      <div class="card-body p-0">
+        {% for doc in documents %}
+        {% with bg=doc.couleur_etat.0 fg=doc.couleur_etat.1 %}
+        <div class="d-flex align-items-start gap-3 px-4 py-3 {% if not forloop.last %}border-bottom{% endif %}"
+             style="border-color:#f8f8f8" id="doc-row-{{ doc.pk }}">
+
+          <!-- Icône état -->
+          <div style="flex-shrink:0;width:38px;height:38px;border-radius:.6rem;background:{{ bg }}20;display:flex;align-items:center;justify-content:center;margin-top:.1rem">
+            <i class="bi {% if doc.etat == 'non_commence' %}bi-circle text-muted
+              {% elif doc.etat == 'en_cours' %}bi-arrow-repeat text-primary
+              {% elif doc.etat == 'finalise' %}bi-check-circle-fill text-success
+              {% elif doc.etat == 'valide' %}bi-patch-check-fill text-success
+              {% else %}bi-x-circle text-danger{% endif %}" style="font-size:1rem"></i>
+          </div>
+
+          <!-- Infos -->
+          <div class="flex-grow-1">
+            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+              <span style="font-size:.85rem;font-weight:600;color:#1a1a2e">{{ doc.type_document.libelle }}</span>
+              <span style="font-size:.68rem;font-weight:600;background:#f3f4f6;color:#6b7280;padding:.1rem .45rem;border-radius:.3rem">
+                {{ doc.type_document.get_categorie_display }}
+              </span>
+              <!-- Badge état courant -->
+              <span id="badge-etat-{{ doc.pk }}" style="font-size:.7rem;font-weight:700;background:{{ bg }};color:{{ fg }};padding:.15rem .5rem;border-radius:.35rem">
+                {{ doc.get_etat_display }}
+              </span>
+            </div>
+            {% if doc.observations %}
+            <div style="font-size:.78rem;color:#6b7280;margin-bottom:.3rem;font-style:italic">{{ doc.observations }}</div>
+            {% endif %}
+            {% if doc.mis_a_jour_par %}
+            <div style="font-size:.7rem;color:#9ca3af">
+              <i class="bi bi-person-check me-1"></i>Mis à jour par {{ doc.mis_a_jour_par.nom_complet }} — {{ doc.mis_a_jour_le|date:"d/m/Y H:i" }}
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Switch état (si activité non clôturée) -->
+          {% if activite.statut != 'cloturee' %}
+          <div class="flex-shrink-0 d-flex flex-column gap-1" style="min-width:160px">
+            <select class="form-select form-select-sm doc-etat-select"
+                    data-doc="{{ doc.pk }}"
+                    data-url="{% url 'operations:document_statut' activite.pk doc.pk %}"
+                    style="font-size:.78rem;border-radius:.4rem">
+              {% for val, label in doc.ETATS %}
+              <option value="{{ val }}" {% if doc.etat == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <!-- Observations rapides -->
+            <input type="text" class="form-control form-control-sm doc-obs-input" data-doc="{{ doc.pk }}"
+                   placeholder="Observations..." value="{{ doc.observations }}"
+                   style="font-size:.75rem;border-radius:.4rem">
+            <button class="btn btn-sm doc-save-btn" data-doc="{{ doc.pk }}"
+                    data-url="{% url 'operations:document_statut' activite.pk doc.pk %}"
+                    style="background:{{ activite.section.sous_direction.couleur }};color:{{ activite.section.sous_direction.couleur_texte }};font-size:.72rem;border-radius:.4rem;padding:.2rem .5rem">
+              <i class="bi bi-check2 me-1"></i>Enregistrer
+            </button>
+          </div>
+          {% endif %}
+
+          <!-- Supprimer -->
+          {% if activite.statut != 'cloturee' %}
+          <form method="post" action="{% url 'operations:document_supprimer' activite.pk doc.pk %}"
+                onsubmit="return confirm('Retirer ce document de l\'activité ?')">
+            {% csrf_token %}
+            <button type="submit" style="background:none;border:none;color:#dc2626;padding:.2rem .3rem;cursor:pointer;font-size:.8rem" title="Retirer">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </form>
+          {% endif %}
+
+        </div>
+        {% endwith %}
+        {% empty %}
+        <div class="text-center py-4" style="color:#9ca3af;font-size:.85rem">
+          <i class="bi bi-file-earmark-text display-6 d-block mb-2" style="opacity:.3"></i>
+          Aucun document attendu — utilisez "Ajouter" pour en associer
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- ══ ACTIONS
+ ═══════════════════════════════════════════════ -->
     {% if activite.statut != 'cloturee' %}
     <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
       <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid {{ activite.section.sous_direction.couleur }};border-radius:1rem 1rem 0 0">
-        <h6 style="margin:0;font-size:.9rem;font-weight:700;color:#1a1a2e"><i class="bi bi-lightning me-2" style="color:{{ activite.section.sous_direction.couleur }}"></i>Actions</h6>
+        <h6 style="margin:0;font-size:.9rem;font-weight:700;color:#1a1a2e">
+          <i class="bi bi-lightning me-2" style="color:{{ activite.section.sous_direction.couleur }}"></i>Actions
+        </h6>
       </div>
       <div class="card-body px-4 py-3 d-flex flex-column gap-3">
 
-        <!-- Clore -->
+        <!-- Clore — formulaire enrichi -->
         <div>
-          <div style="font-size:.78rem;font-weight:700;color:#374151;margin-bottom:.4rem"><i class="bi bi-check-circle me-1 text-success"></i>Clôturer l'activité</div>
-          <form method="post" action="{% url 'operations:activite_clore' activite.pk %}">{% csrf_token %}
-            {{ clore_form.commentaire }}
-            <div class="mt-2">{{ clore_form.date_realisation }}</div>
-            <button type="submit" class="btn btn-sm mt-2 w-100" style="background:#28a745;color:#fff;border-radius:.5rem" onclick="return confirm('Confirmer la clôture ?')"><i class="bi bi-check-lg me-1"></i>Clôturer</button>
+          <div style="font-size:.82rem;font-weight:700;color:#374151;margin-bottom:.6rem">
+            <i class="bi bi-check-circle me-1 text-success"></i>Clôturer l'activité
+          </div>
+          <form method="post" action="{% url 'operations:activite_clore' activite.pk %}">
+            {% csrf_token %}
+            <!-- Motif — boutons radio visuels -->
+            <div class="mb-3">
+              <label style="font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:.5rem">
+                Résultat de l'activité <span class="text-danger">*</span>
+              </label>
+              {% for val, label in clore_form.motif.field.choices %}
+              <label class="d-flex align-items-center gap-2 px-3 py-2 mb-1 rounded motif-option"
+                     style="cursor:pointer;border:1px solid #e5e7eb;font-size:.82rem;font-weight:500;transition:all .15s;
+                     {% if val == 'objectif_atteint' %}color:#065f46;
+                     {% elif val == 'partiellement' %}color:#92400e;
+                     {% elif val == 'non_atteint' or val == 'annule' %}color:#991b1b;
+                     {% else %}color:#374151;{% endif %}">
+                <input type="radio" name="motif" value="{{ val }}"
+                       {% if val == 'objectif_atteint' %}checked{% endif %}
+                       style="accent-color:{% if val == 'objectif_atteint' %}#28a745{% elif val == 'partiellement' %}#F5A623{% else %}#dc3545{% endif %}">
+                {% if val == 'objectif_atteint' %}<i class="bi bi-check-circle-fill text-success"></i>
+                {% elif val == 'partiellement' %}<i class="bi bi-dash-circle-fill text-warning"></i>
+                {% elif val == 'non_atteint' %}<i class="bi bi-x-circle-fill text-danger"></i>
+                {% elif val == 'annule' %}<i class="bi bi-slash-circle text-danger"></i>
+                {% else %}<i class="bi bi-three-dots text-muted"></i>{% endif %}
+                {{ label }}
+              </label>
+              {% endfor %}
+            </div>
+
+            <div class="mb-2">
+              <label style="font-size:.78rem;font-weight:600;color:#374151">
+                Commentaire de clôture <span class="text-danger">*</span>
+              </label>
+              {{ clore_form.commentaire }}
+            </div>
+            <div class="mb-2">
+              <label style="font-size:.78rem;font-weight:600;color:#374151">Date de réalisation effective <span class="text-danger">*</span></label>
+              {{ clore_form.date_realisation }}
+            </div>
+            <button type="submit" class="btn btn-sm mt-1 w-100 fw-bold"
+                    style="background:#28a745;color:#fff;border-radius:.5rem"
+                    onclick="return confirm('Confirmer la clôture de cette activité ?')">
+              <i class="bi bi-check-lg me-1"></i>Clôturer l'activité
+            </button>
           </form>
         </div>
 
         {% if activite.date_intermediaire %}
         <div class="border-top pt-3" style="border-color:#f0f0f0!important">
-          <div style="font-size:.78rem;font-weight:700;color:#374151;margin-bottom:.4rem"><i class="bi bi-calendar-event me-1 text-warning"></i>Reporter la date intermédiaire</div>
+          <div style="font-size:.78rem;font-weight:700;color:#374151;margin-bottom:.4rem">
+            <i class="bi bi-calendar-event me-1 text-warning"></i>Reporter la date intermédiaire
+          </div>
           <form method="post" action="{% url 'operations:activite_reporter' activite.pk %}">{% csrf_token %}
             {{ reporter_form.nouvelle_date }}
             <div class="mt-2">{{ reporter_form.motif }}</div>
-            <button type="submit" class="btn btn-sm mt-2" style="background:#F5A623;color:#fff;border-radius:.5rem;font-size:.82rem"><i class="bi bi-calendar-x me-1"></i>Reporter</button>
+            <button type="submit" class="btn btn-sm mt-2" style="background:#F5A623;color:#fff;border-radius:.5rem;font-size:.82rem">
+              <i class="bi bi-calendar-x me-1"></i>Reporter
+            </button>
           </form>
         </div>
         {% endif %}
 
-        {% if activite.statut == 'cloturee' and activite.type_activite == 'mensuelle' %}
+        {% if activite.type_activite == 'mensuelle' %}
         <div class="border-top pt-3" style="border-color:#f0f0f0!important">
           <form method="post" action="{% url 'operations:activite_cloner' activite.pk %}">{% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-outline-secondary w-100" style="border-radius:.5rem;font-size:.82rem"><i class="bi bi-copy me-1"></i>Cloner (mois suivant)</button>
+            <button type="submit" class="btn btn-sm btn-outline-secondary w-100" style="border-radius:.5rem;font-size:.82rem">
+              <i class="bi bi-copy me-1"></i>Cloner (mois suivant)
+            </button>
           </form>
         </div>
         {% endif %}
 
       </div>
     </div>
+    {% else %}
+    <!-- Résultat de clôture si déjà clôturée -->
+    {% if activite.cloture_motif %}
+    <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-body px-4 py-3">
+        <h6 style="font-size:.88rem;font-weight:700;color:#1a1a2e;margin-bottom:.75rem">
+          <i class="bi bi-flag-fill me-2 text-success"></i>Résultat de clôture
+        </h6>
+        <div class="rounded p-3 mb-2" style="
+          {% if activite.cloture_motif == 'objectif_atteint' %}background:#d1fae5;border-left:4px solid #28a745;
+          {% elif activite.cloture_motif == 'partiellement' %}background:#fef3c7;border-left:4px solid #F5A623;
+          {% else %}background:#fee2e2;border-left:4px solid #dc3545;{% endif %}">
+          <div style="font-size:.85rem;font-weight:700;color:#1a1a2e">
+            {% if activite.cloture_motif == 'objectif_atteint' %}<i class="bi bi-check-circle-fill text-success me-1"></i>
+            {% elif activite.cloture_motif == 'partiellement' %}<i class="bi bi-dash-circle-fill text-warning me-1"></i>
+            {% else %}<i class="bi bi-x-circle-fill text-danger me-1"></i>{% endif %}
+            {{ activite.get_cloture_motif_display }}
+          </div>
+        </div>
+        {% if activite.cloture_commentaire %}
+        <p style="font-size:.83rem;color:#4b5563;margin:0;white-space:pre-line">{{ activite.cloture_commentaire }}</p>
+        {% endif %}
+        <div style="font-size:.75rem;color:#9ca3af;margin-top:.5rem">
+          Clôturé par {{ activite.cloture_par.nom_complet }} le {{ activite.cloture_le|date:"d/m/Y à H:i" }}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    {% if activite.type_activite == 'mensuelle' %}
+    <div class="mt-3">
+      <form method="post" action="{% url 'operations:activite_cloner' activite.pk %}">{% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-secondary w-100" style="border-radius:.5rem;font-size:.82rem">
+          <i class="bi bi-copy me-1"></i>Cloner pour le mois suivant
+        </button>
+      </form>
+    </div>
+    {% endif %}
     {% endif %}
 
     <!-- Acteurs -->

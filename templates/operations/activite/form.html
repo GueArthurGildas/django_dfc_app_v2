@@ -10,7 +10,7 @@
 </div>
 
 <div class="row justify-content-center">
-  <div class="col-lg-8">
+  <div class="col-lg-9">
     <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 12px rgba(0,0,0,.08)">
       <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid #003F7F;border-radius:1rem 1rem 0 0">
         <h5 style="margin:0;font-size:1rem;font-weight:700;color:#1a1a2e">
@@ -26,27 +26,21 @@
 
             <!-- Titre -->
             <div class="col-12">
-              <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">
-                Titre <span class="text-danger">*</span>
-              </label>
+              <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">Titre <span class="text-danger">*</span></label>
               {{ form.titre }}
-              {% if form.titre.errors %}<div class="text-danger small mt-1">{{ form.titre.errors|join:", " }}</div>{% endif %}
             </div>
 
             <!-- Dossier -->
             <div class="col-12">
-              <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">
-                Dossier <span class="text-danger">*</span>
-              </label>
+              <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">Dossier <span class="text-danger">*</span></label>
               {{ form.dossier }}
-              {% if form.dossier.errors %}<div class="text-danger small mt-1">{{ form.dossier.errors|join:", " }}</div>{% endif %}
             </div>
 
-            <!-- Section (héritée du dossier — lecture seule) -->
+            <!-- Section héritée -->
             <div class="col-12">
               <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">
                 <i class="bi bi-layers me-1" style="color:#003F7F"></i>Section & Sous-Direction
-                <span class="badge ms-1" style="background:#e0e7ff;color:#4338ca;font-size:.65rem;font-weight:600">Héritées du dossier</span>
+                <span class="badge ms-1" style="background:#e0e7ff;color:#4338ca;font-size:.65rem">Héritées du dossier</span>
               </label>
               <div id="section-info" class="rounded px-3 py-2" style="background:#f8fafc;border:1px solid #e5e7eb;font-size:.85rem;min-height:38px;display:flex;align-items:center">
                 <span id="section-text" style="color:#9ca3af;font-style:italic">← Sélectionnez un dossier</span>
@@ -59,34 +53,24 @@
               {{ form.type_activite }}
             </div>
             <div class="col-md-4">
-              <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">
-                Date d'ouverture <span class="text-danger">*</span>
-              </label>
+              <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">Date d'ouverture <span class="text-danger">*</span></label>
               {{ form.date_ouverture }}
             </div>
             <div class="col-md-4">
-              <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">
-                Date butoir <span class="text-danger">*</span>
-              </label>
+              <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">Date butoir <span class="text-danger">*</span></label>
               {{ form.date_butoir }}
             </div>
 
             <div class="col-md-6">
               <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">Date intermédiaire</label>
               {{ form.date_intermediaire }}
-              <div style="font-size:.72rem;color:#9ca3af;margin-top:.2rem">Optionnelle — peut être reportée avec motif</div>
+              <div style="font-size:.72rem;color:#9ca3af;margin-top:.2rem">Optionnelle — reportable avec motif</div>
             </div>
 
-            <div class="col-md-6 d-flex align-items-end pb-1">
+            <div class="col-md-6 d-flex align-items-end pb-2">
               <div class="d-flex gap-4">
-                <div class="form-check">
-                  {{ form.est_kpi }}
-                  <label class="form-check-label" style="font-size:.82rem;font-weight:500">KPI suivi</label>
-                </div>
-                <div class="form-check">
-                  {{ form.est_arrete }}
-                  <label class="form-check-label" style="font-size:.82rem;font-weight:500">Arrêté comptable</label>
-                </div>
+                <div class="form-check">{{ form.est_kpi }}<label class="form-check-label" style="font-size:.82rem;font-weight:500">KPI suivi</label></div>
+                <div class="form-check">{{ form.est_arrete }}<label class="form-check-label" style="font-size:.82rem;font-weight:500">Arrêté comptable</label></div>
               </div>
             </div>
 
@@ -100,26 +84,65 @@
             <div class="col-12">
               <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">Acteurs impliqués</label>
               {{ form.acteurs_ids }}
-              <div style="font-size:.72rem;color:#9ca3af;margin-top:.3rem">
-                Maintenez <kbd>Ctrl</kbd> (Windows) ou <kbd>⌘</kbd> (Mac) pour sélectionner plusieurs personnes
+              <div style="font-size:.72rem;color:#9ca3af;margin-top:.3rem">Maintenez <kbd>Ctrl</kbd> pour sélectionner plusieurs</div>
+            </div>
+
+            <!-- ── Documents attendus ─────────────────────────────────── -->
+            <div class="col-12">
+              <div style="border-top:2px solid #f0f0f0;padding-top:1.25rem;margin-top:.5rem">
+                <label class="form-label" style="font-size:.88rem;font-weight:700;color:#1a1a2e">
+                  <i class="bi bi-file-earmark-text me-2" style="color:#003F7F"></i>Documents / Rendus attendus
+                </label>
+                <p style="font-size:.78rem;color:#6b7280;margin-bottom:1rem">
+                  Sélectionnez les documents à produire pour cette activité. Vous pourrez suivre leur avancement depuis la fiche.
+                </p>
+
+                <!-- Documents groupés par catégorie -->
+                {% regroup form.documents_ids.field.queryset by get_categorie_display as categories %}
+                <div class="row g-2">
+                  {% for cat in categories %}
+                  <div class="col-12">
+                    <div style="font-size:.72rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem;margin-top:.5rem">
+                      {{ cat.grouper }}
+                    </div>
+                    <div class="row g-2">
+                      {% for td in cat.list %}
+                      <div class="col-md-4">
+                        <label class="doc-check-label d-flex align-items-start gap-2 p-2 rounded" style="cursor:pointer;border:1px solid #e5e7eb;font-size:.82rem;transition:all .15s"
+                               onmouseover="this.style.borderColor='#003F7F';this.style.background='#f0f4ff'"
+                               onmouseout="if(!this.querySelector('input').checked){this.style.borderColor='#e5e7eb';this.style.background=''}">
+                          <input type="checkbox" name="documents_ids" value="{{ td.pk }}"
+                                 style="margin-top:.15rem;accent-color:#003F7F;flex-shrink:0"
+                                 onchange="updateDocLabel(this)">
+                          <div>
+                            <div style="font-weight:600;color:#1a1a2e;line-height:1.2">{{ td.libelle }}</div>
+                            {% if td.description %}<div style="font-size:.72rem;color:#9ca3af;margin-top:.1rem">{{ td.description|truncatechars:50 }}</div>{% endif %}
+                          </div>
+                        </label>
+                      </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+
+                <div id="docs-selected-summary" style="font-size:.78rem;color:#003F7F;margin-top:.75rem;font-weight:600;display:none">
+                  <i class="bi bi-check-circle-fill me-1"></i><span id="docs-count">0</span> document(s) sélectionné(s)
+                </div>
               </div>
             </div>
 
           </div>
 
           {% if form.non_field_errors %}
-          <div class="alert alert-danger mt-3" style="font-size:.83rem;border-radius:.5rem">
-            {{ form.non_field_errors }}
-          </div>
+          <div class="alert alert-danger mt-3" style="font-size:.83rem;border-radius:.5rem">{{ form.non_field_errors }}</div>
           {% endif %}
 
           <div class="d-flex gap-2 mt-4 pt-3" style="border-top:1px solid #f0f0f0">
             <button type="submit" class="btn fw-600" style="background:#003F7F;color:#fff;border-radius:.5rem">
               <i class="bi bi-check-lg me-1"></i>Enregistrer
             </button>
-            <a href="{% url 'operations:activite_list' %}" class="btn btn-outline-secondary" style="border-radius:.5rem">
-              Annuler
-            </a>
+            <a href="{% url 'operations:activite_list' %}" class="btn btn-outline-secondary" style="border-radius:.5rem">Annuler</a>
           </div>
         </form>
       </div>
@@ -130,24 +153,21 @@
 
 {% block extra_js %}
 <script>
-// Map dossier_id → infos section (passé depuis la vue)
 const DOSSIERS = {{ dossiers_sections|default:"{}" }};
 
 function mettreAJourSection() {
   const dossierId = document.getElementById('id_dossier').value;
-  const info      = document.getElementById('section-info');
-  const text      = document.getElementById('section-text');
-
+  const info = document.getElementById('section-info');
+  const text = document.getElementById('section-text');
   if (dossierId && DOSSIERS[dossierId]) {
     const d = DOSSIERS[dossierId];
     info.style.background  = '#eef2ff';
     info.style.borderColor = '#6366f1';
     text.style.color       = '#1a1a2e';
     text.style.fontStyle   = 'normal';
-    text.innerHTML =
-      '<span class="badge me-2" style="background:#003F7F;font-size:.75rem">' + d.sd_code + '</span>' +
-      '<strong>' + d.section_code + '</strong>' +
-      '<span style="color:#6b7280;margin-left:.4rem">— ' + d.section_libelle + '</span>';
+    text.innerHTML = '<span class="badge me-2" style="background:#003F7F;font-size:.75rem">' + d.sd_code + '</span>'
+      + '<strong>' + d.section_code + '</strong>'
+      + '<span style="color:#6b7280;margin-left:.4rem">— ' + d.section_libelle + '</span>';
   } else {
     info.style.background  = '#f8fafc';
     info.style.borderColor = '#e5e7eb';
@@ -156,9 +176,22 @@ function mettreAJourSection() {
     text.innerHTML = '← Sélectionnez un dossier';
   }
 }
-
 document.getElementById('id_dossier').addEventListener('change', mettreAJourSection);
-// Appliquer au chargement si dossier déjà sélectionné
 document.addEventListener('DOMContentLoaded', mettreAJourSection);
+
+function updateDocLabel(input) {
+  const label = input.closest('label');
+  if (input.checked) {
+    label.style.borderColor = '#003F7F';
+    label.style.background  = '#eef2ff';
+  } else {
+    label.style.borderColor = '#e5e7eb';
+    label.style.background  = '';
+  }
+  const count   = document.querySelectorAll('input[name="documents_ids"]:checked').length;
+  const summary = document.getElementById('docs-selected-summary');
+  document.getElementById('docs-count').textContent = count;
+  summary.style.display = count > 0 ? 'block' : 'none';
+}
 </script>
 {% endblock %}
