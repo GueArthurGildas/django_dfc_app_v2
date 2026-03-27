@@ -14,16 +14,34 @@ from .services import ActiviteService
 from apps.organisation.models import SousDirection, Section
 
 
+# ── Rôles avec accès global ───────────────────────────────────────────────────
+ROLES_GLOBAUX  = ('admin', 'dfc', 'da')
+ROLES_CREATION = ('admin', 'dfc', 'da', 'sd')
+
+
+def get_user_sd(user):
+    """Retourne la SD de l'utilisateur ou None si accès global."""
+    if user.role and user.role.code in ROLES_GLOBAUX:
+        return None  # accès à toutes les SD
+    return user.get_sous_direction()
+
+
+def filtre_qs_par_sd(qs, user, champ_sd='section__sous_direction'):
+    """Filtre un queryset selon la SD de l'utilisateur."""
+    sd = get_user_sd(user)
+    if sd:
+        return qs.filter(**{champ_sd: sd})
+    return qs
+
+
 def get_qs_activites(user):
     qs = Activite.objects.filter(deleted_at__isnull=True).select_related(
         'section__sous_direction', 'dossier', 'created_by'
     )
-    if user.role and user.role.code in ('admin', 'dfc', 'da'):
-        return qs
-    user_sd = user.get_sous_direction()
-    if user_sd:
-        return qs.filter(section__sous_direction=user_sd)
-    return qs.none()
+    sd = get_user_sd(user)
+    if sd:
+        return qs.filter(section__sous_direction=sd)
+    return qs
 
 
 def calcul_stats_qs(qs):
@@ -55,11 +73,8 @@ class DossierListView(LoginRequiredMixin, ListView):
     context_object_name = 'dossiers'
 
     def get_queryset(self):
-        user = self.request.user
-        qs   = Dossier.objects.filter(est_actif=True).select_related('section__sous_direction', 'responsable')
-        if not (user.role and user.role.code in ('admin','dfc','da')):
-            user_sd = user.get_sous_direction()
-            qs = qs.filter(section__sous_direction=user_sd) if user_sd else qs.none()
+        qs    = Dossier.objects.filter(est_actif=True).select_related('section__sous_direction', 'responsable')
+        qs    = filtre_qs_par_sd(qs, self.request.user)
         sd_id = self.request.GET.get('sd')
         if sd_id:
             qs = qs.filter(section__sous_direction_id=sd_id)
@@ -83,11 +98,54 @@ class DossierDetailView(LoginRequiredMixin, DetailView):
         return ctx
 
 
-class DossierCreateView(LoginRequiredMixin, CreateView):
-    model = Dossier
-    form_class = DossierForm
+class DossierCreateView(LoginRequiredMixin, View):
     template_name = 'operations/dossier/form.html'
-    success_url = reverse_lazy('operations:dossier_list')
+
+    def _get_form(self, user, data=None):
+        from apps.organisation.models import Section
+        form = DossierForm(data)
+        role = user.role.code if user.role else ''
+        # Restreindre les sections à celles de la SD de l'utilisateur
+        if role not in ('admin', 'dfc', 'da'):
+            user_sd = user.get_sous_direction()
+            if user_sd:
+                form.fields['section'].queryset = Section.objects.filter(
+                    sous_direction=user_sd, actif=True
+                )
+            else:
+                form.fields['section'].queryset = Section.objects.none()
+        # Restreindre le responsable aux membres de la SD
+        if role not in ('admin', 'dfc', 'da'):
+            from apps.authentication.models import Utilisateur
+            user_sd = user.get_sous_direction()
+            if user_sd:
+                form.fields['responsable'].queryset = Utilisateur.objects.filter(
+                    sections_lien__section__sous_direction=user_sd,
+                    est_actif_cie=True
+                ).distinct()
+        return form
+
+    def get(self, request):
+        return render(request, self.template_name, {
+            'form': self._get_form(request.user),
+            'action': 'Créer'
+        })
+
+    def post(self, request):
+        form = self._get_form(request.user, request.POST)
+        if form.is_valid():
+            dossier = form.save(commit=False)
+            # Sécurité : vérifier que la section appartient bien à la SD de l'user
+            role = request.user.role.code if request.user.role else ''
+            if role not in ('admin', 'dfc', 'da'):
+                user_sd = request.user.get_sous_direction()
+                if dossier.section.sous_direction != user_sd:
+                    messages.error(request, "Vous ne pouvez pas créer un dossier pour une autre sous-direction.")
+                    return render(request, self.template_name, {'form': form, 'action': 'Créer'})
+            dossier.save()
+            messages.success(request, f"Dossier « {dossier.titre} » créé.")
+            return redirect('operations:dossier_list')
+        return render(request, self.template_name, {'form': form, 'action': 'Créer'})
 
 
 class DossierUpdateView(LoginRequiredMixin, UpdateView):
@@ -95,6 +153,24 @@ class DossierUpdateView(LoginRequiredMixin, UpdateView):
     form_class = DossierForm
     template_name = 'operations/dossier/form.html'
     success_url = reverse_lazy('operations:dossier_list')
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        user = self.request.user
+        role = user.role.code if user.role else ''
+        if role not in ('admin', 'dfc', 'da'):
+            from apps.organisation.models import Section
+            from apps.authentication.models import Utilisateur
+            user_sd = user.get_sous_direction()
+            if user_sd:
+                form.fields['section'].queryset = Section.objects.filter(
+                    sous_direction=user_sd, actif=True
+                )
+                form.fields['responsable'].queryset = Utilisateur.objects.filter(
+                    sections_lien__section__sous_direction=user_sd,
+                    est_actif_cie=True
+                ).distinct()
+        return form
 
 
 # ── Activités ─────────────────────────────────────────────────────────────────
@@ -140,7 +216,12 @@ class ActiviteListView(LoginRequiredMixin, ListView):
         if assignee == 'me':
             qs_base = qs_base.filter(acteurs__utilisateur=self.request.user).distinct()
         ctx['stats']           = calcul_stats_qs(qs_base)
-        ctx['sous_directions'] = SousDirection.objects.filter(actif=True)
+        # Les non-globaux ne voient que leur propre SD dans le filtre
+        user_sd = get_user_sd(self.request.user)
+        if user_sd:
+            ctx['sous_directions'] = SousDirection.objects.filter(pk=user_sd.pk)
+        else:
+            ctx['sous_directions'] = SousDirection.objects.filter(actif=True)
         ctx['filtre_statut']   = self.request.GET.get('statut', '')
         ctx['filtre_sd']       = self.request.GET.get('sd', '')
         ctx['filtre_assignee'] = assignee

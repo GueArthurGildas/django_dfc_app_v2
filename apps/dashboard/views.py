@@ -4,21 +4,11 @@ from django.views import View
 from django.shortcuts import render
 from django.utils import timezone
 from apps.organisation.models import SousDirection
-
-
-def get_stats_dashboard(user, sd_id=None):
-    from apps.operations.views import get_qs_activites, calcul_stats_qs
-    qs = get_qs_activites(user)
-    if sd_id and sd_id != 'all':
-        try:
-            qs = qs.filter(section__sous_direction_id=int(sd_id))
-        except (ValueError, TypeError):
-            pass
-    return calcul_stats_qs(qs), qs
+from apps.operations.views import get_qs_activites, calcul_stats_qs, get_user_sd, ROLES_GLOBAUX
 
 
 def get_mes_activites(user):
-    """Activités où l'utilisateur est responsable ou acteur, non clôturées."""
+    """Activités non clôturées où l'utilisateur est responsable ou acteur."""
     from apps.operations.models import Activite
     today = timezone.now().date()
     qs = Activite.objects.filter(
@@ -28,22 +18,16 @@ def get_mes_activites(user):
         'section__sous_direction', 'dossier'
     ).distinct().order_by('date_butoir')
 
-    # Enrichir chaque activité avec son contexte personnel
-    mes_retard    = qs.filter(date_butoir__lt=today)
-    mes_urgentes  = qs.filter(date_butoir__gte=today, date_butoir__lte=today + timezone.timedelta(days=7))
-    mes_normales  = qs.filter(date_butoir__gt=today + timezone.timedelta(days=7))
-    mes_responsable = qs.filter(acteurs__utilisateur=user, acteurs__role_activite='responsable').distinct()
-
     return {
-        'toutes':       qs,
-        'en_retard':    mes_retard,
-        'urgentes':     mes_urgentes,
-        'normales':     mes_normales,
-        'responsable':  mes_responsable,
-        'total':        qs.count(),
-        'nb_retard':    mes_retard.count(),
-        'nb_urgentes':  mes_urgentes.count(),
-        'nb_responsable': mes_responsable.count(),
+        'toutes':         qs,
+        'en_retard':      qs.filter(date_butoir__lt=today),
+        'urgentes':       qs.filter(date_butoir__gte=today, date_butoir__lte=today + timezone.timedelta(days=7)),
+        'normales':       qs.filter(date_butoir__gt=today + timezone.timedelta(days=7)),
+        'responsable':    qs.filter(acteurs__utilisateur=user, acteurs__role_activite='responsable').distinct(),
+        'total':          qs.count(),
+        'nb_retard':      qs.filter(date_butoir__lt=today).count(),
+        'nb_urgentes':    qs.filter(date_butoir__gte=today, date_butoir__lte=today + timezone.timedelta(days=7)).count(),
+        'nb_responsable': qs.filter(acteurs__utilisateur=user, acteurs__role_activite='responsable').distinct().count(),
     }
 
 
@@ -51,35 +35,45 @@ class DashboardView(LoginRequiredMixin, View):
     template_name = 'dashboard/index.html'
 
     def get(self, request):
-        today  = timezone.now().date()
-        user   = request.user
-        sd_id  = request.GET.get('sd', 'all')
+        today    = timezone.now().date()
+        user     = request.user
+        role     = user.role.code if user.role else ''
+        sd_id    = request.GET.get('sd', 'all')
+        user_sd  = get_user_sd(user)  # None si accès global
 
-        # Sous-directions visibles
-        role = user.role.code if user.role else ''
-        if role in ('admin', 'dfc', 'da'):
+        # ── Sous-directions visibles ─────────────────────────────────────────
+        if user_sd is None:
+            # Admin / DFC / DA : toutes les SD
             sous_directions = SousDirection.objects.filter(actif=True).order_by('ordre')
         else:
-            user_sd = user.get_sous_direction()
-            sous_directions = SousDirection.objects.filter(pk=user_sd.pk) if user_sd else SousDirection.objects.none()
+            # SD et en dessous : uniquement leur SD
+            sous_directions = SousDirection.objects.filter(pk=user_sd.pk)
+            sd_id = str(user_sd.pk)  # forcer le filtre sur leur SD
 
-        stats, qs = get_stats_dashboard(user, sd_id)
+        # ── Filtre SD supplémentaire (pour admin/DFC/DA) ─────────────────────
+        qs_global = get_qs_activites(user)
+        if sd_id and sd_id != 'all':
+            try:
+                qs_global = qs_global.filter(section__sous_direction_id=int(sd_id))
+            except (ValueError, TypeError):
+                pass
 
-        # Activités urgentes globales (J-7)
-        activites_urgentes = qs.filter(
+        stats = calcul_stats_qs(qs_global)
+
+        # ── Activités urgentes J-7 ────────────────────────────────────────────
+        activites_urgentes = qs_global.filter(
             statut__in=['ouverte', 'en_cours'],
             date_butoir__lte=today + timezone.timedelta(days=7)
         ).select_related('section__sous_direction').order_by('date_butoir')[:6]
 
-        # MES activités (focus personnel)
+        # ── Mes activités (focus personnel) ──────────────────────────────────
         mes_activites = get_mes_activites(user)
 
-        # Stats par SD
+        # ── Stats par SD (uniquement les SD visibles) ─────────────────────────
         stats_par_sd = []
         for sd in sous_directions:
-            from apps.operations.views import calcul_stats_qs, get_qs_activites
             qs_sd = get_qs_activites(user).filter(section__sous_direction=sd)
-            s = calcul_stats_qs(qs_sd)
+            s     = calcul_stats_qs(qs_sd)
             stats_par_sd.append({
                 'id':      sd.pk,
                 'code':    sd.code,
@@ -91,6 +85,7 @@ class DashboardView(LoginRequiredMixin, View):
         context = {
             'sous_directions':    sous_directions,
             'sd_selectionnee':    sd_id,
+            'afficher_filtre_sd': user_sd is None,  # filtre visible seulement pour les globaux
             'stats':              stats,
             'stats_par_sd':       json.dumps(stats_par_sd),
             'sd_cards':           stats_par_sd,
