@@ -1,9 +1,10 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views import View
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, View
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
-from .models import SousDirection, Section, PIP
+from .models import SousDirection, Section, PIP, CompteComptable, SousDirectionCompte
 from .forms import SousDirectionForm, SectionForm, PIPForm, PhotoResponsableForm
 
 
@@ -30,6 +31,9 @@ class SousDirectionDetailView(LoginRequiredMixin, DetailView):
         ctx = super().get_context_data(**kwargs)
         sd = self.object
         ctx['pips_actifs']        = sd.pips.filter(actif=True)
+        # Comptes déjà associés à la SD
+        comptes_associes_ids = sd.comptes.values_list('compte_id', flat=True)
+        ctx['comptes_disponibles']  = CompteComptable.objects.filter(actif=True).exclude(pk__in=comptes_associes_ids).order_by('type_compte','numero')
         ctx['membres']            = sd.get_membres()
         ctx['stats']              = sd.get_stats()
         ctx['photo_form']         = PhotoResponsableForm(instance=sd.responsable) if sd.responsable else None
@@ -127,3 +131,28 @@ class PIPUpdateView(LoginRequiredMixin, UpdateView):
     form_class = PIPForm
     template_name = 'organisation/pip/form.html'
     success_url = reverse_lazy('organisation:pip_list')
+
+class GererComptesSDView(LoginRequiredMixin, View):
+    """Ajoute un compte comptable à une sous-direction."""
+    def post(self, request, pk):
+        sd = get_object_or_404(SousDirection, pk=pk)
+        compte_pk = request.POST.get('compte_id')
+        note      = request.POST.get('note', '')
+        if compte_pk:
+            compte = get_object_or_404(CompteComptable, pk=compte_pk, actif=True)
+            SousDirectionCompte.objects.get_or_create(
+                sous_direction=sd, compte=compte,
+                defaults={'note': note}
+            )
+            messages.success(request, f"Compte {compte.numero} — {compte.libelle} ajouté.")
+        return redirect('organisation:sd_detail', pk=pk)
+
+
+class RetirerCompteSDView(LoginRequiredMixin, View):
+    """Retire un compte comptable d'une sous-direction."""
+    def post(self, request, pk, compte_pk):
+        lien = get_object_or_404(SousDirectionCompte, sous_direction_id=pk, compte_id=compte_pk)
+        numero = lien.compte.numero
+        lien.delete()
+        messages.success(request, f"Compte {numero} retiré.")
+        return redirect('organisation:sd_detail', pk=pk)

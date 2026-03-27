@@ -1,0 +1,302 @@
+[
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 1,
+    "fields": {
+      "numero": "401",
+      "libelle": "Fournisseurs",
+      "type_compte": "tiers",
+      "description": "Comptes fournisseurs — dettes exploitation",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 2,
+    "fields": {
+      "numero": "411",
+      "libelle": "Clients",
+      "type_compte": "tiers",
+      "description": "Comptes clients — créances exploitation",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 3,
+    "fields": {
+      "numero": "411100",
+      "libelle": "Clients ordinaires",
+      "type_compte": "tiers",
+      "description": "Clients facturation ordinaire",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 4,
+    "fields": {
+      "numero": "411200",
+      "libelle": "Clients PEPT",
+      "type_compte": "tiers",
+      "description": "Clients Programme Électricité Pour Tous",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 5,
+    "fields": {
+      "numero": "411300",
+      "libelle": "Clients Smart Vending",
+      "type_compte": "tiers",
+      "description": "Clients Smart Vending prépayé",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 6,
+    "fields": {
+      "numero": "416",
+      "libelle": "Clients douteux",
+      "type_compte": "tiers",
+      "description": "Créances clients douteuses — provisionnées",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 7,
+    "fields": {
+      "numero": "467",
+      "libelle": "Débiteurs divers",
+      "type_compte": "tiers",
+      "description": "Débiteurs divers hors exploitation",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 8,
+    "fields": {
+      "numero": "512",
+      "libelle": "Banques",
+      "type_compte": "tresorerie",
+      "description": "Comptes bancaires CIE",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 9,
+    "fields": {
+      "numero": "570",
+      "libelle": "Caisse",
+      "type_compte": "tresorerie",
+      "description": "Caisses agences et siège",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 10,
+    "fields": {
+      "numero": "601",
+      "libelle": "Achats matières et fournitures",
+      "type_compte": "charge",
+      "description": "Achats consommables",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 11,
+    "fields": {
+      "numero": "706",
+      "libelle": "Prestations de services",
+      "type_compte": "produit",
+      "description": "Revenus prestations — vente énergie",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 12,
+    "fields": {
+      "numero": "706100",
+      "libelle": "Vente énergie BT",
+      "type_compte": "produit",
+      "description": "Chiffre d'affaires Basse Tension",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 13,
+    "fields": {
+      "numero": "706200",
+      "libelle": "Vente énergie MT",
+      "type_compte": "produit",
+      "description": "Chiffre d'affaires Moyenne Tension",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 14,
+    "fields": {
+      "numero": "706300",
+      "libelle": "Vente énergie PEPT",
+      "type_compte": "produit",
+      "description": "CA Programme Électricité Pour Tous",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 15,
+    "fields": {
+      "numero": "706400",
+      "libelle": "Vente Smart Vending",
+      "type_compte": "produit",
+      "description": "CA Smart Vending prépayé",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 16,
+    "fields": {
+      "numero": "701",
+      "libelle": "Produits à recevoir",
+      "type_compte": "produit",
+      "description": "Produits facturés non encore encaissés",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 17,
+    "fields": {
+      "numero": "486",
+      "libelle": "Charges constatées d'avance",
+      "type_compte": "actif",
+      "description": "Charges payées d'avance",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 18,
+    "fields": {
+      "numero": "487",
+      "libelle": "Produits constatés d'avance",
+      "type_compte": "passif",
+      "description": "Produits encaissés d'avance",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 19,
+    "fields": {
+      "numero": "421",
+      "libelle": "Personnel — rémunérations dues",
+      "type_compte": "passif",
+      "description": "Salaires et charges à payer",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 20,
+    "fields": {
+      "numero": "4428",
+      "libelle": "TVA à décaisser",
+      "type_compte": "passif",
+      "description": "TVA collectée nette — à reverser",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 21,
+    "fields": {
+      "numero": "161",
+      "libelle": "Emprunts et dettes",
+      "type_compte": "passif",
+      "description": "Emprunts bancaires et obligataires",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 22,
+    "fields": {
+      "numero": "211",
+      "libelle": "Terrains",
+      "type_compte": "actif",
+      "description": "Immobilisations — terrains",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 23,
+    "fields": {
+      "numero": "231",
+      "libelle": "Immobilisations en cours",
+      "type_compte": "actif",
+      "description": "Constructions et équipements en cours",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 24,
+    "fields": {
+      "numero": "185",
+      "libelle": "Fonds de concours",
+      "type_compte": "passif",
+      "description": "Fonds reçus de l'État — PEPT",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organisation.comptecomptable",
+    "pk": 25,
+    "fields": {
+      "numero": "445",
+      "libelle": "État — taxes sur CA",
+      "type_compte": "tiers",
+      "description": "TVA et impôts sur le CA",
+      "actif": true,
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  }
+]

@@ -15,6 +15,9 @@ urlpatterns = [
     path('sections/<int:pk>/',                              views.SectionDetailView.as_view(),              name='section_detail'),
     path('sections/creer/',                                 views.SectionCreateView.as_view(),              name='section_create'),
     path('sections/<int:pk>/modifier/',                     views.SectionUpdateView.as_view(),              name='section_update'),
+    # Comptes comptables SD
+    path('sous-directions/<int:pk>/comptes/',          views.GererComptesSDView.as_view(),  name='sd_comptes'),
+    path('sous-directions/<int:pk>/comptes/retirer/<int:compte_pk>/', views.RetirerCompteSDView.as_view(), name='sd_compte_retirer'),
     # PIP
     path('pip/',                                            views.PIPListView.as_view(),                    name='pip_list'),
     path('pip/creer/',                                      views.PIPCreateView.as_view(),                  name='pip_create'),

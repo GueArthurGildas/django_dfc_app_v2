@@ -474,3 +474,70 @@
   </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+{% load operations_extras %}
+<script>
+// ── Documents : Enregistrer état + observations ──────────────────────────────
+document.querySelectorAll('.doc-save-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    const docId = this.dataset.doc;
+    const url   = this.dataset.url;
+    const etat  = document.querySelector('.doc-etat-select[data-doc="' + docId + '"]').value;
+    const obs   = document.querySelector('.doc-obs-input[data-doc="' + docId + '"]').value;
+    const csrf  = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const badge = document.getElementById('badge-etat-' + docId);
+    const self  = this;
+
+    fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf},
+      body: JSON.stringify({etat: etat, observations: obs})
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        if (badge) {
+          badge.textContent      = data.label;
+          badge.style.background = data.bg;
+          badge.style.color      = data.fg;
+        }
+        self.innerHTML      = '<i class="bi bi-check-circle-fill me-1"></i>Enregistré';
+        self.style.background = '#28a745';
+        self.style.color      = '#fff';
+        setTimeout(() => {
+          self.innerHTML = '<i class="bi bi-check2 me-1"></i>Enregistrer';
+          self.style.background = '';
+          self.style.color = '';
+        }, 2500);
+      } else {
+        alert('Erreur : ' + (data.error || 'inconnue'));
+      }
+    })
+    .catch(() => alert('Erreur réseau — vérifiez votre connexion.'));
+  });
+});
+
+// ── Motif clôture — style radio sélectionné ──────────────────────────────────
+document.querySelectorAll('.motif-option').forEach(function(label) {
+  var inp = label.querySelector('input');
+  if (inp) {
+    inp.addEventListener('change', function() {
+      document.querySelectorAll('.motif-option').forEach(l => {
+        l.style.background  = '';
+        l.style.borderColor = '#e5e7eb';
+      });
+      label.style.background  = this.value === 'objectif_atteint' ? '#d1fae5'
+                              : this.value === 'partiellement'    ? '#fef3c7'
+                              : '#fee2e2';
+      label.style.borderColor = this.value === 'objectif_atteint' ? '#6ee7b7'
+                              : this.value === 'partiellement'    ? '#fcd34d'
+                              : '#fca5a5';
+    });
+  }
+});
+// Appliquer au chargement
+var checked = document.querySelector('.motif-option input:checked');
+if (checked) checked.dispatchEvent(new Event('change'));
+</script>
+{% endblock %}

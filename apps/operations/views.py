@@ -14,10 +14,7 @@ from .services import ActiviteService
 from apps.organisation.models import SousDirection, Section
 
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
-
 def get_qs_activites(user):
-    """Filtre les activités selon le rôle de l'utilisateur."""
     qs = Activite.objects.filter(deleted_at__isnull=True).select_related(
         'section__sous_direction', 'dossier', 'created_by'
     )
@@ -30,14 +27,12 @@ def get_qs_activites(user):
 
 
 def calcul_stats_qs(qs):
-    """Calcule les indicateurs à partir d'un queryset d'activités."""
-    today = timezone.now().date()
-    total      = qs.count()
-    cloturees  = qs.filter(statut='cloturee').count()
-    en_retard  = qs.filter(statut__in=['ouverte', 'en_cours'], date_butoir__lt=today).count()
-    en_delai   = qs.filter(statut='cloturee', est_dans_delai=True).count()
+    today     = timezone.now().date()
+    total     = qs.count()
+    cloturees = qs.filter(statut='cloturee').count()
+    en_retard = qs.filter(statut__in=['ouverte','en_cours'], date_butoir__lt=today).count()
+    en_delai  = qs.filter(statut='cloturee', est_dans_delai=True).count()
     avancement = qs.aggregate(moy=Avg('etat_avancement'))['moy'] or 0
-
     return {
         'total':            total,
         'ouvertes':         qs.filter(statut='ouverte').count(),
@@ -61,11 +56,20 @@ class DossierListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Dossier.objects.filter(est_actif=True).select_related('section__sous_direction', 'responsable')
-        if user.role and user.role.code in ('admin', 'dfc', 'da'):
-            return qs
-        user_sd = user.get_sous_direction()
-        return qs.filter(section__sous_direction=user_sd) if user_sd else qs.none()
+        qs   = Dossier.objects.filter(est_actif=True).select_related('section__sous_direction', 'responsable')
+        if not (user.role and user.role.code in ('admin','dfc','da')):
+            user_sd = user.get_sous_direction()
+            qs = qs.filter(section__sous_direction=user_sd) if user_sd else qs.none()
+        sd_id = self.request.GET.get('sd')
+        if sd_id:
+            qs = qs.filter(section__sous_direction_id=sd_id)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['sous_directions'] = SousDirection.objects.filter(actif=True)
+        ctx['filtre_sd']       = self.request.GET.get('sd', '')
+        return ctx
 
 
 class DossierDetailView(LoginRequiredMixin, DetailView):
@@ -99,35 +103,54 @@ class ActiviteListView(LoginRequiredMixin, ListView):
     model = Activite
     template_name = 'operations/activite/list.html'
     context_object_name = 'activites'
-    paginate_by = 20
+    paginate_by = 25
 
     def get_queryset(self):
         qs       = get_qs_activites(self.request.user)
         statut   = self.request.GET.get('statut')
         sd_id    = self.request.GET.get('sd')
         assignee = self.request.GET.get('assignee')
+        annee    = self.request.GET.get('annee')
+        mois     = self.request.GET.get('mois')
         if statut:
             qs = qs.filter(statut=statut)
         if sd_id:
             qs = qs.filter(section__sous_direction_id=sd_id)
         if assignee == 'me':
             qs = qs.filter(acteurs__utilisateur=self.request.user).distinct()
+        if annee:
+            qs = qs.filter(date_ouverture__year=annee)
+        if mois:
+            qs = qs.filter(date_ouverture__month=mois)
         return qs.order_by('date_butoir')
 
     def get_context_data(self, **kwargs):
         ctx      = super().get_context_data(**kwargs)
         assignee = self.request.GET.get('assignee', '')
-        # Stats de base (toutes activités visibles par l'user)
         qs_base  = get_qs_activites(self.request.user)
         if assignee == 'me':
             qs_base = qs_base.filter(acteurs__utilisateur=self.request.user).distinct()
-        stats = calcul_stats_qs(qs_base)
-        ctx['stats']           = stats
+        ctx['stats']           = calcul_stats_qs(qs_base)
         ctx['sous_directions'] = SousDirection.objects.filter(actif=True)
         ctx['filtre_statut']   = self.request.GET.get('statut', '')
         ctx['filtre_sd']       = self.request.GET.get('sd', '')
         ctx['filtre_assignee'] = assignee
+        ctx['filtre_annee']    = self.request.GET.get('annee', '')
+        ctx['filtre_mois']     = self.request.GET.get('mois', '')
         ctx['today']           = timezone.now().date()
+        # Années disponibles pour le filtre
+        from django.db.models.functions import ExtractYear
+        ctx['mois_list'] = [
+            (1,'Janvier'),(2,'Février'),(3,'Mars'),(4,'Avril'),
+            (5,'Mai'),(6,'Juin'),(7,'Juillet'),(8,'Août'),
+            (9,'Septembre'),(10,'Octobre'),(11,'Novembre'),(12,'Décembre')
+        ]
+        ctx['annees_dispo'] = (
+            get_qs_activites(self.request.user)
+            .annotate(annee=ExtractYear('date_ouverture'))
+            .values_list('annee', flat=True)
+            .distinct().order_by('-annee')
+        )
         return ctx
 
 
@@ -138,15 +161,15 @@ class ActiviteDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        a = self.object
+        a   = self.object
         ctx['acteurs']        = a.acteurs.select_related('utilisateur__role').all()
         ctx['commentaires']   = a.commentaires.select_related('auteur').order_by('created_at')
         ctx['historique']     = a.historique.select_related('utilisateur').order_by('-created_at')[:10]
         ctx['comment_form']   = CommentaireForm()
         ctx['clore_form']     = CloreForm(initial={'date_realisation': timezone.now().date(), 'motif': 'objectif_atteint'})
-        ctx['documents']      = a.documents.select_related('type_document', 'mis_a_jour_par').order_by('type_document__categorie', 'type_document__ordre')
-        ctx['types_documents'] = TypeDocument.objects.filter(actif=True).exclude(pk__in=a.documents.values('type_document_id')).order_by('categorie', 'ordre')
         ctx['reporter_form']  = ReporterDateForm()
+        ctx['documents']      = a.documents.select_related('type_document','mis_a_jour_par').order_by('type_document__categorie','type_document__ordre')
+        ctx['types_documents'] = TypeDocument.objects.filter(actif=True).exclude(pk__in=a.documents.values('type_document_id')).order_by('categorie','ordre')
         ctx['today']          = timezone.now().date()
         bg, fg = a.get_statut_display_badge()
         ctx['statut_bg'], ctx['statut_fg'] = bg, fg
@@ -156,29 +179,35 @@ class ActiviteDetailView(LoginRequiredMixin, DetailView):
 class ActiviteCreateView(LoginRequiredMixin, View):
     template_name = 'operations/activite/form.html'
 
-    def get(self, request):
-        # Préremplir le dossier si passé en GET
-        initial = {}
-        dossier_id = request.GET.get('dossier')
-        if dossier_id:
-            initial['dossier'] = dossier_id
-        form = ActiviteForm(initial=initial)
-        # Préparer les infos de section pour chaque dossier (pour le JS)
-        dossiers_sections = {
-            str(d.pk): {'section_id': d.section_id, 'section_code': d.section.code, 'section_libelle': d.section.libelle, 'sd_code': d.section.sous_direction.code}
+    def _dossiers_sections(self):
+        return {
+            str(d.pk): {
+                'section_id':      d.section_id,
+                'section_code':    d.section.code,
+                'section_libelle': d.section.libelle,
+                'sd_code':         d.section.sous_direction.code
+            }
             for d in Dossier.objects.select_related('section__sous_direction').all()
         }
-        return render(request, self.template_name, {'form': form, 'action': 'Créer', 'dossiers_sections': dossiers_sections})
+
+    def get(self, request):
+        initial = {}
+        if request.GET.get('dossier'):
+            initial['dossier'] = request.GET.get('dossier')
+        return render(request, self.template_name, {
+            'form': ActiviteForm(initial=initial),
+            'action': 'Créer',
+            'dossiers_sections': json.dumps(self._dossiers_sections()),
+        })
 
     def post(self, request):
         form = ActiviteForm(request.POST)
         if form.is_valid():
-            data = form.cleaned_data.copy()
+            data          = form.cleaned_data.copy()
             acteurs_ids   = [u.pk for u in data.pop('acteurs_ids', [])]
             documents_ids = [td.pk for td in data.pop('documents_ids', [])]
             data['acteurs_ids'] = acteurs_ids
             activite = ActiviteService.creer(data, request.user)
-            # Créer les DocumentActivite depuis les TypeDocument sélectionnés
             for td_pk in documents_ids:
                 DocumentActivite.objects.get_or_create(
                     activite=activite, type_document_id=td_pk,
@@ -186,12 +215,11 @@ class ActiviteCreateView(LoginRequiredMixin, View):
                 )
             messages.success(request, "Activité créée avec succès.")
             return redirect('operations:activite_detail', pk=activite.pk)
-        dossiers_sections = {
-            str(d.pk): {'section_id': d.section_id, 'section_code': d.section.code,
-                        'section_libelle': d.section.libelle, 'sd_code': d.section.sous_direction.code}
-            for d in Dossier.objects.select_related('section__sous_direction').all()
-        }
-        return render(request, self.template_name, {'form': form, 'action': 'Créer', 'dossiers_sections': dossiers_sections})
+        return render(request, self.template_name, {
+            'form': form,
+            'action': 'Créer',
+            'dossiers_sections': json.dumps(self._dossiers_sections()),
+        })
 
 
 class ActiviteUpdateView(LoginRequiredMixin, UpdateView):
@@ -214,10 +242,7 @@ class CommenterView(LoginRequiredMixin, View):
         form = CommentaireForm(request.POST)
         if form.is_valid():
             d = form.cleaned_data
-            ActiviteService.mettre_a_jour(
-                activite, activite.statut, d['avancement'],
-                d['contenu'], request.user, d['type_comment']
-            )
+            ActiviteService.mettre_a_jour(activite, activite.statut, d['avancement'], d['contenu'], request.user, d['type_comment'])
             messages.success(request, "Commentaire ajouté.")
         return redirect('operations:activite_detail', pk=pk)
 
@@ -228,13 +253,10 @@ class CloreActiviteView(LoginRequiredMixin, View):
         form = CloreForm(request.POST)
         if form.is_valid():
             d = form.cleaned_data
-            ActiviteService.clore(
-                activite, d['commentaire'], request.user,
-                motif=d['motif'], date_realisation=d['date_realisation']
-            )
+            ActiviteService.clore(activite, d['commentaire'], request.user, motif=d['motif'], date_realisation=d['date_realisation'])
             messages.success(request, "Activité clôturée.")
         else:
-            messages.error(request, "Veuillez corriger les erreurs du formulaire de clôture.")
+            messages.error(request, "Veuillez corriger les erreurs du formulaire.")
         return redirect('operations:activite_detail', pk=pk)
 
 
@@ -261,7 +283,6 @@ class ClonerActiviteView(LoginRequiredMixin, View):
 
 
 class ChangerStatutView(LoginRequiredMixin, View):
-    """Endpoint AJAX pour le Kanban drag & drop."""
     def post(self, request, pk):
         activite = get_object_or_404(Activite, pk=pk)
         try:
@@ -269,8 +290,7 @@ class ChangerStatutView(LoginRequiredMixin, View):
             statut = data.get('statut')
             if statut not in dict(Activite.STATUTS):
                 return JsonResponse({'error': 'Statut invalide'}, status=400)
-            ActiviteService.mettre_a_jour(activite, statut, activite.etat_avancement,
-                                          f"Statut changé via Kanban → {statut}", request.user)
+            ActiviteService.mettre_a_jour(activite, statut, activite.etat_avancement, f"Statut changé via Kanban → {statut}", request.user)
             return JsonResponse({'ok': True, 'statut': statut})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
@@ -280,30 +300,30 @@ class ActiviteKanbanView(LoginRequiredMixin, View):
     template_name = 'operations/activite/kanban.html'
 
     def get(self, request):
-        qs = get_qs_activites(request.user).filter(deleted_at__isnull=True)
+        qs    = get_qs_activites(request.user).filter(deleted_at__isnull=True)
         sd_id = request.GET.get('sd')
         if sd_id:
             qs = qs.filter(section__sous_direction_id=sd_id)
         kanban_cols = [
-            {'statut': 'ouverte',    'label': 'Ouverte',    'color': '#003F7F', 'activites': list(qs.filter(statut='ouverte').order_by('date_butoir').select_related('section__sous_direction'))},
-            {'statut': 'en_cours',   'label': 'En cours',   'color': '#F5A623', 'activites': list(qs.filter(statut='en_cours').order_by('date_butoir').select_related('section__sous_direction'))},
-            {'statut': 'en_attente', 'label': 'En attente', 'color': '#6c757d', 'activites': list(qs.filter(statut='en_attente').order_by('date_butoir').select_related('section__sous_direction'))},
-            {'statut': 'cloturee',   'label': 'Clôturée',   'color': '#28a745', 'activites': list(qs.filter(statut='cloturee').order_by('-cloture_le').select_related('section__sous_direction')[:15])},
+            {'statut':'ouverte',    'label':'Ouverte',    'color':'#003F7F', 'activites': list(qs.filter(statut='ouverte').order_by('date_butoir').select_related('section__sous_direction'))},
+            {'statut':'en_cours',   'label':'En cours',   'color':'#F5A623', 'activites': list(qs.filter(statut='en_cours').order_by('date_butoir').select_related('section__sous_direction'))},
+            {'statut':'en_attente', 'label':'En attente', 'color':'#6c757d', 'activites': list(qs.filter(statut='en_attente').order_by('date_butoir').select_related('section__sous_direction'))},
+            {'statut':'cloturee',   'label':'Clôturée',   'color':'#28a745', 'activites': list(qs.filter(statut='cloturee').order_by('-cloture_le').select_related('section__sous_direction')[:15])},
         ]
-        context = {
-            'kanban_cols':    kanban_cols,
+        return render(request, self.template_name, {
+            'kanban_cols':     kanban_cols,
             'sous_directions': SousDirection.objects.filter(actif=True),
             'filtre_sd':       sd_id or '',
             'today':           timezone.now().date(),
-        }
-        return render(request, self.template_name, context)
+        })
 
+
+# ── Documents ─────────────────────────────────────────────────────────────────
 
 class AjouterDocumentActiviteView(LoginRequiredMixin, View):
-    """Ajoute un document attendu depuis la fiche activité."""
     def post(self, request, pk):
-        activite  = get_object_or_404(Activite, pk=pk)
-        td_pk     = request.POST.get('type_document_id')
+        activite = get_object_or_404(Activite, pk=pk)
+        td_pk    = request.POST.get('type_document_id')
         if td_pk:
             td = get_object_or_404(TypeDocument, pk=td_pk, actif=True)
             DocumentActivite.objects.get_or_create(
@@ -314,96 +334,70 @@ class AjouterDocumentActiviteView(LoginRequiredMixin, View):
         return redirect('operations:activite_detail', pk=pk)
 
 
-
 class ChangerStatutDocView(LoginRequiredMixin, View):
-    """Met à jour l'état d'un DocumentActivite via POST AJAX."""
     def post(self, request, pk, doc_pk):
-        import json as _json
         doc = get_object_or_404(DocumentActivite, pk=doc_pk, activite_id=pk)
         try:
-            data = _json.loads(request.body)
+            data = json.loads(request.body)
         except Exception:
             data = {}
         etat         = data.get('etat') or request.POST.get('etat')
-        observations = data.get('observations', '')
-        date_prev    = data.get('date_prevue')
-        date_real    = data.get('date_realisation')
+        observations = data.get('observations', doc.observations)
 
         if etat not in dict(DocumentActivite.ETATS):
             return JsonResponse({'error': 'État invalide'}, status=400)
 
         doc.etat         = etat
-        doc.observations = observations or doc.observations
-        if date_real:
-            from datetime import datetime
-            try:
-                doc.date_realisation = datetime.strptime(date_real, '%Y-%m-%d').date()
-            except ValueError:
-                pass
+        doc.observations = observations
         doc.mis_a_jour_par = request.user
         doc.mis_a_jour_le  = timezone.now()
-        doc.save(update_fields=['etat', 'observations', 'date_realisation', 'mis_a_jour_par', 'mis_a_jour_le'])
+        doc.save(update_fields=['etat','observations','mis_a_jour_par','mis_a_jour_le'])
 
         bg, fg = doc.couleur_etat
-        return JsonResponse({
-            'ok':    True,
-            'etat':  etat,
-            'label': doc.get_etat_display(),
-            'bg':    bg,
-            'fg':    fg,
-        })
+        return JsonResponse({'ok': True, 'etat': etat, 'label': doc.get_etat_display(), 'bg': bg, 'fg': fg})
 
 
 class SupprimerDocView(LoginRequiredMixin, View):
-    """Retire un document attendu d'une activité."""
     def post(self, request, pk, doc_pk):
-        doc = get_object_or_404(DocumentActivite, pk=doc_pk, activite_id=pk)
+        doc     = get_object_or_404(DocumentActivite, pk=doc_pk, activite_id=pk)
         libelle = doc.type_document.libelle
         doc.delete()
         messages.success(request, f"Document « {libelle} » retiré.")
         return redirect('operations:activite_detail', pk=pk)
 
-# ── API JSON Dashboard ────────────────────────────────────────────────────────
+
+# ── API JSON ──────────────────────────────────────────────────────────────────
 
 class StatsAPIView(LoginRequiredMixin, View):
-    """Endpoint JSON pour le dashboard filtrable par SD."""
     def get(self, request):
         sd_id = request.GET.get('sd', '')
-        qs = get_qs_activites(request.user)
+        qs    = get_qs_activites(request.user)
         if sd_id and sd_id != 'all':
             qs = qs.filter(section__sous_direction_id=sd_id)
-
         stats = calcul_stats_qs(qs)
         today = timezone.now().date()
-
-        # Stats par SD (pour le comparatif)
         stats_par_sd = []
-        sds = SousDirection.objects.filter(actif=True)
-        for sd in sds:
-            qs_sd = get_qs_activites(request.user).filter(section__sous_direction=sd)
-            total_sd   = qs_sd.count()
-            clot_sd    = qs_sd.filter(statut='cloturee').count()
-            retard_sd  = qs_sd.filter(statut__in=['ouverte','en_cours'], date_butoir__lt=today).count()
+        for sd in SousDirection.objects.filter(actif=True):
+            qs_sd    = get_qs_activites(request.user).filter(section__sous_direction=sd)
+            total_sd = qs_sd.count()
+            clot_sd  = qs_sd.filter(statut='cloturee').count()
+            retard_sd= qs_sd.filter(statut__in=['ouverte','en_cours'], date_butoir__lt=today).count()
             stats_par_sd.append({
-                'code':       sd.code,
-                'couleur':    sd.couleur,
-                'total':      total_sd,
-                'cloturees':  clot_sd,
-                'en_retard':  retard_sd,
-                'taux':       round(clot_sd / total_sd * 100) if total_sd else 0,
+                'id':      sd.pk,
+                'code':    sd.code,
+                'couleur': sd.couleur,
+                'total':   total_sd,
+                'cloturees': clot_sd,
+                'en_retard': retard_sd,
+                'taux':    round(clot_sd/total_sd*100) if total_sd else 0,
             })
-
-        # Urgentes (J-7)
         urgentes = list(
-            qs.filter(statut__in=['ouverte','en_cours'],
-                      date_butoir__lte=today + timezone.timedelta(days=7))
+            qs.filter(statut__in=['ouverte','en_cours'], date_butoir__lte=today+timezone.timedelta(days=7))
             .order_by('date_butoir')
-            .values('id', 'titre', 'date_butoir', 'etat_avancement', 'statut',
-                    'section__code', 'section__sous_direction__couleur')[:8]
+            .values('id','titre','date_butoir','etat_avancement','statut','section__code','section__sous_direction__couleur')[:8]
         )
         for u in urgentes:
             u['date_butoir'] = str(u['date_butoir'])
-
         stats['stats_par_sd'] = stats_par_sd
         stats['urgentes']     = urgentes
         return JsonResponse(stats)

@@ -165,3 +165,47 @@ class PIP(models.Model):
 
     def __str__(self):
         return f"{self.code} — {self.libelle}"
+
+
+class CompteComptable(models.Model):
+    """Référentiel des comptes comptables suivis par la DFC."""
+    TYPES = [
+        ('actif',       'Actif'),
+        ('passif',      'Passif'),
+        ('charge',      'Charge'),
+        ('produit',     'Produit'),
+        ('tresorerie',  'Trésorerie'),
+        ('tiers',       'Compte tiers'),
+        ('autre',       'Autre'),
+    ]
+    numero      = models.CharField(max_length=20, unique=True, verbose_name="N° de compte")
+    libelle     = models.CharField(max_length=300)
+    type_compte = models.CharField(max_length=20, choices=TYPES, default='autre')
+    description = models.TextField(blank=True)
+    actif       = models.BooleanField(default=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['numero']
+        verbose_name = 'Compte Comptable'
+        verbose_name_plural = 'Comptes Comptables'
+
+    def __str__(self):
+        return f"{self.numero} — {self.libelle}"
+
+
+class SousDirectionCompte(models.Model):
+    """Pivot : comptes comptables suivis par une sous-direction."""
+    sous_direction  = models.ForeignKey(SousDirection, on_delete=models.CASCADE, related_name='comptes')
+    compte          = models.ForeignKey(CompteComptable, on_delete=models.CASCADE, related_name='sous_directions')
+    note            = models.CharField(max_length=200, blank=True, help_text="Précision sur le suivi de ce compte")
+    created_at      = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [('sous_direction', 'compte')]
+        ordering = ['compte__numero']
+        verbose_name = 'Compte suivi SD'
+        verbose_name_plural = 'Comptes suivis SD'
+
+    def __str__(self):
+        return f"{self.sous_direction.code} → {self.compte}"
