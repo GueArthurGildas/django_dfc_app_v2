@@ -186,8 +186,15 @@ class ActiviteDetailView(LoginRequiredMixin, DetailView):
         return ctx
 
 
+# Rôles autorisés à créer des activités
+ROLES_CREATION_ACTIVITE = ('admin', 'dfc', 'da', 'sd')
+
+
 class ActiviteCreateView(LoginRequiredMixin, View):
     template_name = 'operations/activite/form.html'
+
+    def _check_permission(self, user):
+        return user.role and user.role.code in ROLES_CREATION_ACTIVITE
 
     def _dossiers_sections(self):
         return {
@@ -195,40 +202,75 @@ class ActiviteCreateView(LoginRequiredMixin, View):
                 'section_id':      d.section_id,
                 'section_code':    d.section.code,
                 'section_libelle': d.section.libelle,
-                'sd_code':         d.section.sous_direction.code
+                'sd_code':         d.section.sous_direction.code,
+                'sd_id':           d.section.sous_direction_id,
+                'sd_couleur':      d.section.sous_direction.couleur,
             }
             for d in Dossier.objects.select_related('section__sous_direction').all()
         }
 
+    def _membres_par_sd(self):
+        """Retourne les membres groupés par SD pour le sélecteur JS."""
+        from apps.authentication.models import Utilisateur
+        membres = Utilisateur.objects.filter(
+            est_actif_cie=True
+        ).select_related('role').prefetch_related(
+            'sections_lien__section__sous_direction'
+        ).order_by('role__niveau', 'last_name', 'first_name')
+
+        result = {}
+        for u in membres:
+            sd = u.get_sous_direction()
+            sd_id = str(sd.pk) if sd else '0'
+            if sd_id not in result:
+                result[sd_id] = []
+            result[sd_id].append({
+                'id':     u.pk,
+                'nom':    u.nom_complet,
+                'role':   u.role.libelle if u.role else '',
+                'niveau': u.role.niveau if u.role else 9,
+            })
+        return result
+
     def get(self, request):
+        if not self._check_permission(request.user):
+            messages.error(request, "Vous n'avez pas les droits pour créer une activité. Seuls les Sous-Directeurs, DA et DFC peuvent le faire.")
+            return redirect('operations:activite_list')
         initial = {}
         if request.GET.get('dossier'):
             initial['dossier'] = request.GET.get('dossier')
         return render(request, self.template_name, {
-            'form': ActiviteForm(initial=initial),
-            'action': 'Créer',
-            'dossiers_sections': json.dumps(self._dossiers_sections()),
+            'form':               ActiviteForm(initial=initial),
+            'action':             'Créer',
+            'dossiers_sections':  json.dumps(self._dossiers_sections()),
+            'membres_par_sd':     json.dumps(self._membres_par_sd()),
         })
 
     def post(self, request):
+        if not self._check_permission(request.user):
+            messages.error(request, "Action non autorisée.")
+            return redirect('operations:activite_list')
         form = ActiviteForm(request.POST)
         if form.is_valid():
-            data          = form.cleaned_data.copy()
-            acteurs_ids   = [u.pk for u in data.pop('acteurs_ids', [])]
-            documents_ids = [td.pk for td in data.pop('documents_ids', [])]
-            data['acteurs_ids'] = acteurs_ids
+            data             = form.cleaned_data.copy()
+            acteurs_ids      = [u.pk for u in data.pop('acteurs_ids', [])]
+            responsables_ids = [u.pk for u in data.pop('responsables_ids', [])]
+            documents_ids    = [td.pk for td in data.pop('documents_ids', [])]
+            data['acteurs_ids']      = acteurs_ids
+            data['responsables_ids'] = responsables_ids
             activite = ActiviteService.creer(data, request.user)
             for td_pk in documents_ids:
                 DocumentActivite.objects.get_or_create(
                     activite=activite, type_document_id=td_pk,
                     defaults={'etat': 'non_commence'}
                 )
-            messages.success(request, "Activité créée avec succès.")
+            messages.success(request, f"Activité « {activite.titre} » créée avec succès.")
             return redirect('operations:activite_detail', pk=activite.pk)
         return render(request, self.template_name, {
-            'form': form,
-            'action': 'Créer',
+            'form':              form,
+            'action':            'Créer',
             'dossiers_sections': json.dumps(self._dossiers_sections()),
+            'membres_par_sd':    json.dumps(self._membres_par_sd()),
         })
 
 

@@ -20,16 +20,29 @@ class DossierForm(forms.ModelForm):
 
 
 class ActiviteForm(forms.ModelForm):
+    """
+    - section héritée du dossier
+    - responsables et acteurs sélectionnés via checkboxes AJAX par SD
+    """
+    responsables_ids = forms.ModelMultipleChoiceField(
+        queryset=Utilisateur.objects.filter(est_actif_cie=True).select_related('role'),
+        required=False,
+        label="Responsable(s)",
+        widget=forms.CheckboxSelectMultiple(),
+        help_text="Personne(s) responsable(s) de l'activité"
+    )
     acteurs_ids = forms.ModelMultipleChoiceField(
-        queryset=Utilisateur.objects.filter(est_actif_cie=True),
-        required=False, label="Acteurs impliqués",
-        widget=forms.SelectMultiple(attrs={**WS, 'size': '5'})
+        queryset=Utilisateur.objects.filter(est_actif_cie=True).select_related('role'),
+        required=False,
+        label="Acteurs impliqués",
+        widget=forms.CheckboxSelectMultiple(),
+        help_text="Personnes participant à l'activité"
     )
     documents_ids = forms.ModelMultipleChoiceField(
         queryset=TypeDocument.objects.filter(actif=True).order_by('categorie', 'ordre'),
-        required=False, label="Documents / rendus attendus",
+        required=False,
+        label="Documents / rendus attendus",
         widget=forms.CheckboxSelectMultiple(),
-        help_text="Sélectionnez les documents à produire pour cette activité"
     )
 
     class Meta:
@@ -58,14 +71,12 @@ class ActiviteForm(forms.ModelForm):
 
 
 class DocumentActiviteForm(forms.ModelForm):
-    """Mise à jour de l'état d'un document attendu."""
     class Meta:
         model  = DocumentActivite
         fields = ['etat', 'observations', 'date_prevue', 'date_realisation']
         widgets = {
             'etat':             forms.Select(attrs=WS),
-            'observations':     forms.Textarea(attrs={**W, 'rows': 2,
-                                'placeholder': 'Observations sur l\'état de production...'}),
+            'observations':     forms.Textarea(attrs={**W, 'rows': 2}),
             'date_prevue':      forms.DateInput(attrs={**W, 'type': 'date'}),
             'date_realisation': forms.DateInput(attrs={**W, 'type': 'date'}),
         }
@@ -77,21 +88,14 @@ class CommentaireForm(forms.ModelForm):
         fields = ['type_comment', 'contenu', 'avancement']
         widgets = {
             'type_comment': forms.Select(attrs=WS),
-            'contenu':      forms.Textarea(attrs={**W, 'rows': 3,
-                            'placeholder': "Décrivez l'avancement, les blocages, les actions..."}),
+            'contenu':      forms.Textarea(attrs={**W, 'rows': 3}),
             'avancement':   forms.NumberInput(attrs={**W, 'min': 0, 'max': 100}),
         }
 
 
 class ReporterDateForm(forms.Form):
-    nouvelle_date = forms.DateField(
-        widget=forms.DateInput(attrs={**W, 'type': 'date'}),
-        label="Nouvelle date intermédiaire"
-    )
-    motif = forms.CharField(
-        widget=forms.Textarea(attrs={**W, 'rows': 2}),
-        label="Motif du report (obligatoire)"
-    )
+    nouvelle_date = forms.DateField(widget=forms.DateInput(attrs={**W, 'type': 'date'}), label="Nouvelle date")
+    motif         = forms.CharField(widget=forms.Textarea(attrs={**W, 'rows': 2}), label="Motif (obligatoire)")
 
 
 class CloreForm(forms.Form):
@@ -102,18 +106,6 @@ class CloreForm(forms.Form):
         ('annule',           'Activité annulée'),
         ('autre',            'Autre motif'),
     ]
-    motif = forms.ChoiceField(
-        choices=MOTIFS,
-        widget=forms.RadioSelect(),
-        label="Résultat de l'activité",
-        initial='objectif_atteint'
-    )
-    commentaire = forms.CharField(
-        widget=forms.Textarea(attrs={**W, 'rows': 3,
-        'placeholder': "Décrivez le résultat, les livrables produits, les écarts constatés..."}),
-        label="Commentaire de clôture"
-    )
-    date_realisation = forms.DateField(
-        widget=forms.DateInput(attrs={**W, 'type': 'date'}),
-        label="Date de réalisation effective"
-    )
+    motif            = forms.ChoiceField(choices=MOTIFS, widget=forms.RadioSelect(), initial='objectif_atteint', label="Résultat")
+    commentaire      = forms.CharField(widget=forms.Textarea(attrs={**W, 'rows': 3}), label="Commentaire de clôture")
+    date_realisation = forms.DateField(widget=forms.DateInput(attrs={**W, 'type': 'date'}), label="Date de réalisation effective")

@@ -11,8 +11,10 @@ class ActiviteService:
 
     @staticmethod
     def creer(data: dict, user) -> Activite:
-        acteurs_ids = data.pop('acteurs_ids', [])
-        pips_ids    = data.pop('pips_ids', [])
+        acteurs_ids      = data.pop('acteurs_ids', [])
+        responsables_ids = data.pop('responsables_ids', [])
+        pips_ids         = data.pop('pips_ids', [])
+        data_pre = {'acteurs_ids': acteurs_ids, 'responsables_ids': responsables_ids}
         data['created_by'] = user
         data['statut']     = 'ouverte'
         # Si section absente, la récupérer depuis le dossier
@@ -22,17 +24,25 @@ class ActiviteService:
 
         activite = Activite.objects.create(**data)
 
+        # Responsables explicitement désignés
+        responsables_ids = data_pre.get('responsables_ids', [])
+        for uid in responsables_ids:
+            ActiviteActeur.objects.get_or_create(
+                activite=activite, utilisateur_id=uid,
+                defaults={'role_activite': 'responsable', 'peut_recevoir_mail': True}
+            )
+        # Si aucun responsable désigné → le créateur devient responsable par défaut
+        if not responsables_ids:
+            ActiviteActeur.objects.get_or_create(
+                activite=activite, utilisateur=user,
+                defaults={'role_activite': 'responsable'}
+            )
         # Acteurs
         for uid in acteurs_ids:
             ActiviteActeur.objects.get_or_create(
                 activite=activite, utilisateur_id=uid,
-                defaults={'role_activite': 'acteur'}
+                defaults={'role_activite': 'acteur', 'peut_recevoir_mail': True}
             )
-        # Responsable = créateur par défaut
-        ActiviteActeur.objects.get_or_create(
-            activite=activite, utilisateur=user,
-            defaults={'role_activite': 'responsable'}
-        )
         # PIP
         if pips_ids:
             from .models import ActivitePIP
