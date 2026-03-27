@@ -10,6 +10,7 @@ urlpatterns = [
     path('sous-directions/creer/',                          views.SousDirectionCreateView.as_view(),        name='sd_create'),
     path('sous-directions/<int:pk>/modifier/',              views.SousDirectionUpdateView.as_view(),        name='sd_update'),
     path('sous-directions/<int:pk>/photo-responsable/',     views.PhotoResponsableView.as_view(),           name='sd_photo_responsable'),
+    path('sous-directions/<int:pk>/audio/',                views.AudioSDView.as_view(),                    name='sd_audio'),
     # Sections
     path('sections/',                                       views.SectionListView.as_view(),                name='section_list'),
     path('sections/<int:pk>/',                              views.SectionDetailView.as_view(),              name='section_detail'),

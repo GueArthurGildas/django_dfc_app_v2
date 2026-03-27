@@ -32,6 +32,7 @@ class SousDirection(models.Model):
     )
     actif           = models.BooleanField(default=True)
     ordre           = models.PositiveSmallIntegerField(default=0)
+    audio_resume    = models.FileField(upload_to='audio/sd/', null=True, blank=True, verbose_name="Audio de présentation", help_text="Fichier audio résumant la sous-direction (MP3, WAV, OGG)")
     created_at      = models.DateTimeField(auto_now_add=True)
     updated_at      = models.DateTimeField(auto_now=True)
 

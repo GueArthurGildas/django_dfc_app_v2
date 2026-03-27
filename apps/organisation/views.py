@@ -34,6 +34,11 @@ class SousDirectionDetailView(LoginRequiredMixin, DetailView):
         # Comptes déjà associés à la SD
         comptes_associes_ids = sd.comptes.values_list('compte_id', flat=True)
         ctx['comptes_disponibles']  = CompteComptable.objects.filter(actif=True).exclude(pk__in=comptes_associes_ids).order_by('type_compte','numero')
+        # Dossiers de la SD pour remplacer les modules métier
+        from apps.operations.models import Dossier
+        ctx['dossiers_sd'] = Dossier.objects.filter(
+            section__sous_direction=sd, est_actif=True
+        ).select_related('section').order_by('section__code', 'titre')
         ctx['membres']            = sd.get_membres()
         ctx['stats']              = sd.get_stats()
         ctx['photo_form']         = PhotoResponsableForm(instance=sd.responsable) if sd.responsable else None
@@ -52,6 +57,12 @@ class SousDirectionDetailView(LoginRequiredMixin, DetailView):
             ],
             'colors': ['#28a745', sd.couleur, '#F5A623', '#dc3545'],
         }
+        ctx['chart_legende'] = [
+            ('Clôturées',           stats['nb_activites_cloturees'],  '#28a745'),
+            ('En cours / Ouvertes', en_cours_ok,                       sd.couleur),
+            ('En attente',          stats['nb_activites_en_attente'],  '#F5A623'),
+            ('En retard',           stats['nb_activites_en_retard'],   '#dc3545'),
+        ]
         return ctx
 
 
@@ -77,12 +88,24 @@ class SousDirectionCreateView(LoginRequiredMixin, CreateView):
     template_name = 'organisation/sous_direction/form.html'
     success_url = reverse_lazy('organisation:sd_portail')
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        if self.request.method in ('POST', 'PUT'):
+            kwargs['files'] = self.request.FILES
+        return kwargs
+
 
 class SousDirectionUpdateView(LoginRequiredMixin, UpdateView):
     model = SousDirection
     form_class = SousDirectionForm
     template_name = 'organisation/sous_direction/form.html'
     success_url = reverse_lazy('organisation:sd_portail')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        if self.request.method in ('POST', 'PUT'):
+            kwargs['files'] = self.request.FILES
+        return kwargs
 
 
 class SectionListView(LoginRequiredMixin, ListView):
@@ -155,4 +178,29 @@ class RetirerCompteSDView(LoginRequiredMixin, View):
         numero = lien.compte.numero
         lien.delete()
         messages.success(request, f"Compte {numero} retiré.")
+        return redirect('organisation:sd_detail', pk=pk)
+
+class AudioSDView(LoginRequiredMixin, View):
+    """Upload dédié de l'audio de présentation d'une SD — ne touche qu'au champ audio_resume."""
+    def post(self, request, pk):
+        sd = get_object_or_404(SousDirection, pk=pk)
+        if 'audio_resume' not in request.FILES:
+            messages.error(request, "Aucun fichier audio sélectionné.")
+            return redirect('organisation:sd_detail', pk=pk)
+        fichier = request.FILES['audio_resume']
+        # Vérifier le type MIME
+        if not fichier.content_type.startswith('audio/'):
+            messages.error(request, "Le fichier doit être un fichier audio (MP3, WAV, OGG...).")
+            return redirect('organisation:sd_detail', pk=pk)
+        # Supprimer l'ancien fichier si présent
+        if sd.audio_resume:
+            try:
+                import os
+                if os.path.isfile(sd.audio_resume.path):
+                    os.remove(sd.audio_resume.path)
+            except Exception:
+                pass
+        sd.audio_resume = fichier
+        sd.save(update_fields=['audio_resume'])
+        messages.success(request, "Audio de présentation mis à jour avec succès.")
         return redirect('organisation:sd_detail', pk=pk)

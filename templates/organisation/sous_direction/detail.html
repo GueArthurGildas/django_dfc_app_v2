@@ -4,7 +4,7 @@
 
 {% block content %}
 
-<!-- ══ BOUTON RETOUR ════════════════════════════════════════════════════════ -->
+<!-- ══ RETOUR ═══════════════════════════════════════════════════════════════ -->
 <div class="mb-4">
   <a href="{% url 'organisation:sd_portail' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem">
     <i class="bi bi-arrow-left me-1"></i>Retour aux Sous-Directions
@@ -19,18 +19,15 @@
       <!-- Avatar responsable -->
       <div style="position:relative;flex-shrink:0">
         {% if sd.responsable and sd.responsable.photo %}
-          <img src="{{ sd.responsable.photo.url }}" alt="{{ sd.responsable.nom_complet }}"
-               id="avatar-responsable"
+          <img src="{{ sd.responsable.photo.url }}" alt="{{ sd.responsable.nom_complet }}" id="avatar-responsable"
                style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.7);box-shadow:0 2px 8px rgba(0,0,0,.2)">
         {% else %}
-          <div id="avatar-responsable"
-               style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;border:3px solid rgba(255,255,255,.5)">
+          <div id="avatar-responsable" style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;border:3px solid rgba(255,255,255,.5)">
             <i class="bi bi-person-fill" style="font-size:2.2rem;color:{{ sd.couleur_texte }}"></i>
           </div>
         {% endif %}
         {% if peut_modifier and sd.responsable %}
-        <button onclick="document.getElementById('modal-photo').style.display='flex'"
-                title="Changer la photo"
+        <button onclick="document.getElementById('modal-photo').style.display='flex'" title="Changer la photo"
                 style="position:absolute;bottom:0;right:0;width:26px;height:26px;border-radius:50%;background:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.2)">
           <i class="bi bi-camera-fill" style="font-size:.75rem;color:#003F7F"></i>
         </button>
@@ -39,12 +36,8 @@
 
       <!-- Titre -->
       <div class="flex-grow-1">
-        <span style="display:inline-block;background:rgba(255,255,255,.2);color:{{ sd.couleur_texte }};font-size:.72rem;font-weight:700;letter-spacing:.08em;padding:.2rem .6rem;border-radius:.3rem;margin-bottom:.4rem">
-          {{ sd.code }}
-        </span>
-        <h1 style="color:{{ sd.couleur_texte }};font-size:1.5rem;font-weight:800;margin:0 0 .4rem;letter-spacing:-.02em;line-height:1.2">
-          {{ sd.libelle }}
-        </h1>
+        <span style="display:inline-block;background:rgba(255,255,255,.2);color:{{ sd.couleur_texte }};font-size:.72rem;font-weight:700;letter-spacing:.08em;padding:.2rem .6rem;border-radius:.3rem;margin-bottom:.4rem">{{ sd.code }}</span>
+        <h1 style="color:{{ sd.couleur_texte }};font-size:1.5rem;font-weight:800;margin:0 0 .4rem;letter-spacing:-.02em;line-height:1.2">{{ sd.libelle }}</h1>
         <div style="color:{{ sd.couleur_texte }};opacity:.9;font-size:.85rem">
           <i class="bi bi-person-badge me-1"></i>
           <strong>{{ sd.responsable.nom_complet|default:"Responsable non défini" }}</strong>
@@ -52,7 +45,7 @@
         </div>
       </div>
 
-      <!-- Bouton modifier -->
+      <!-- Boutons -->
       <div class="d-flex gap-2">
         <a href="{% url 'operations:activite_list' %}?sd={{ sd.pk }}"
            class="btn btn-sm" style="background:rgba(255,255,255,.15);color:{{ sd.couleur_texte }};border:1px solid rgba(255,255,255,.35);border-radius:.5rem">
@@ -66,13 +59,10 @@
         {% endif %}
       </div>
     </div>
-    {% if sd.description %}
-    <p style="color:{{ sd.couleur_texte }};opacity:.85;font-size:.88rem;margin:0 0 1rem;line-height:1.6;max-width:70ch">{{ sd.description }}</p>
-    {% endif %}
     <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.07)"></div>
   </div>
 
-  <!-- ── Barre KPI ── -->
+  <!-- KPI bar -->
   <div class="row g-0" style="border-top:3px solid {{ sd.couleur }};background:#fff">
     <div class="col text-center py-3" style="border-right:1px solid #f0f0f0">
       <div style="font-size:1.6rem;font-weight:800;color:{{ sd.couleur }}">{{ stats.nb_membres }}</div>
@@ -98,34 +88,123 @@
 </div>
 
 
-<!-- ══ DESCRIPTION + MISSION ════════════════════════════════════════════════ -->
-{% if sd.description or sd.mission %}
+<!-- ══ DESCRIPTION ANIMÉE + AUDIO ════════════════════════════════════════════ -->
+{% if sd.description or sd.mission or sd.audio_resume %}
 <div class="row g-4 mb-4">
-  {% if sd.description %}
-  <div class="{% if sd.mission %}col-lg-5{% else %}col-12{% endif %}">
-    <div class="card h-100" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+
+  {% if sd.description or sd.mission %}
+  <div class="{% if sd.audio_resume %}col-lg-8{% else %}col-12{% endif %}">
+
+    {% if sd.description %}
+    <!-- Description avec effet typewriter -->
+    <div class="card mb-3" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
       <div class="card-body px-4 py-3">
-        <h5 style="font-size:.95rem;font-weight:700;color:#1a1a2e;margin-bottom:.5rem">
-          <span style="display:inline-block;width:4px;height:18px;background:{{ sd.couleur }};border-radius:2px;margin-right:.5rem;vertical-align:middle"></span>
+        <h5 style="font-size:.85rem;font-weight:700;color:#1a1a2e;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem">
+          <span style="display:inline-block;width:4px;height:18px;background:{{ sd.couleur }};border-radius:2px"></span>
           Description générale
         </h5>
-        <p style="font-size:.88rem;color:#4b5563;line-height:1.7;margin:0">{{ sd.description }}</p>
+        <!-- Conteneur typewriter -->
+        <div style="position:relative;font-size:.9rem;color:#4b5563;line-height:1.8;min-height:2rem">
+          <span id="typewriter-text" style="white-space:pre-line"></span>
+          <span id="typewriter-cursor" style="display:inline-block;width:2px;height:1.1em;background:{{ sd.couleur }};margin-left:2px;vertical-align:text-bottom;animation:blink .7s infinite"></span>
+        </div>
+        <!-- Texte caché pour le JS -->
+        <div id="typewriter-source" style="display:none">{{ sd.description }}</div>
       </div>
     </div>
-  </div>
-  {% endif %}
-  {% if sd.mission %}
-  <div class="{% if sd.description %}col-lg-7{% else %}col-12{% endif %}">
-    <div class="card h-100" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:4px solid {{ sd.couleur }}">
+    {% endif %}
+
+    {% if sd.mission %}
+    <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:4px solid {{ sd.couleur }}">
       <div class="card-body px-4 py-3">
-        <h5 style="font-size:.95rem;font-weight:700;color:#1a1a2e;margin-bottom:.5rem">
-          <i class="bi bi-bullseye me-2" style="color:{{ sd.couleur }}"></i>Mission & Objectifs
+        <h5 style="font-size:.85rem;font-weight:700;color:#1a1a2e;margin-bottom:.5rem">
+          <i class="bi bi-bullseye me-2" style="color:{{ sd.couleur }}"></i>Mission & Objectifs stratégiques
         </h5>
         <p style="font-size:.88rem;color:#4b5563;line-height:1.8;margin:0;white-space:pre-line">{{ sd.mission }}</p>
       </div>
     </div>
+    {% endif %}
   </div>
   {% endif %}
+
+  <!-- Audio -->
+  {% if sd.audio_resume %}
+  <div class="{% if sd.description or sd.mission %}col-lg-4{% else %}col-12{% endif %}">
+    <div class="card h-100" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06);background:linear-gradient(135deg,{{ sd.couleur }}08,{{ sd.couleur }}18)">
+      <div class="card-body px-4 py-4 d-flex flex-column align-items-center justify-content-center text-center">
+        <!-- Icône animée -->
+        <div id="audio-icon" style="width:72px;height:72px;border-radius:50%;background:{{ sd.couleur }};display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px {{ sd.couleur }}44;margin-bottom:1rem;cursor:pointer;transition:transform .2s"
+             onclick="toggleAudio()" title="Écouter la présentation">
+          <i class="bi bi-play-fill" id="audio-play-icon" style="font-size:1.8rem;color:{{ sd.couleur_texte }};margin-left:4px"></i>
+        </div>
+        <!-- Ondes sonores animées (visibles pendant lecture) -->
+        <div id="audio-waves" style="display:none;align-items:flex-end;gap:3px;height:24px;margin-bottom:.75rem">
+          {% for i in "12345678" %}<div class="wave-bar" style="width:4px;background:{{ sd.couleur }};border-radius:2px;animation:wave {{ forloop.counter0|add:'3' }}00ms ease-in-out infinite alternate"></div>{% endfor %}
+        </div>
+        <h6 style="font-size:.88rem;font-weight:700;color:#1a1a2e;margin-bottom:.3rem">Présentation audio</h6>
+        <p style="font-size:.75rem;color:#6b7280;margin-bottom:1rem">Résumé de la {{ sd.code }} par le responsable</p>
+
+        <!-- Lecteur audio natif (caché, contrôlé par JS) -->
+        <audio id="sd-audio" src="{{ sd.audio_resume.url }}"
+               onended="onAudioEnd()" ontimeupdate="updateProgress()"
+               style="display:none"></audio>
+
+        <!-- Barre de progression -->
+        <div style="width:100%;background:#e5e7eb;border-radius:99px;height:4px;margin-bottom:.5rem;cursor:pointer" onclick="seekAudio(event, this)">
+          <div id="audio-progress" style="width:0%;background:{{ sd.couleur }};height:4px;border-radius:99px;transition:width .5s linear"></div>
+        </div>
+        <div class="d-flex justify-content-between w-100">
+          <span id="audio-current" style="font-size:.7rem;color:#6b7280">0:00</span>
+          <span id="audio-duration" style="font-size:.7rem;color:#6b7280">--:--</span>
+        </div>
+
+        {% if peut_modifier %}
+        <div class="mt-3 w-100">
+          <form method="post" enctype="multipart/form-data"
+                action="{% url 'organisation:sd_audio' sd.pk %}"
+                id="form-audio-update">
+            {% csrf_token %}
+            <input type="file" name="audio_resume" id="input-audio" accept="audio/*"
+                   style="display:none"
+                   onchange="document.getElementById('form-audio-update').submit()">
+          </form>
+          <button type="button" onclick="document.getElementById('input-audio').click()"
+                  class="btn btn-sm w-100"
+                  style="background:{{ sd.couleur }}18;color:{{ sd.couleur }};border:1px dashed {{ sd.couleur }};border-radius:.5rem;font-size:.78rem">
+            <i class="bi bi-upload me-1"></i>Remplacer l'audio
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% elif peut_modifier %}
+  <!-- Upload initial si pas encore d'audio -->
+  <div class="col-lg-4">
+    <div class="card h-100" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06);border:2px dashed #e5e7eb">
+      <div class="card-body d-flex flex-column align-items-center justify-content-center text-center px-4 py-4">
+        <div style="width:60px;height:60px;border-radius:50%;background:#f8fafc;display:flex;align-items:center;justify-content:center;margin-bottom:1rem">
+          <i class="bi bi-mic" style="font-size:1.5rem;color:#9ca3af"></i>
+        </div>
+        <h6 style="font-size:.88rem;font-weight:700;color:#374151;margin-bottom:.3rem">Présentation audio</h6>
+        <p style="font-size:.78rem;color:#9ca3af;margin-bottom:1rem">Ajoutez un audio de présentation pour cette sous-direction</p>
+        <form method="post" enctype="multipart/form-data"
+               action="{% url 'organisation:sd_audio' sd.pk %}"
+               id="form-audio-init">
+          {% csrf_token %}
+          <input type="file" name="audio_resume" id="input-audio-init" accept="audio/*"
+                 style="display:none"
+                 onchange="document.getElementById('form-audio-init').submit()">
+          <button type="button" onclick="document.getElementById('input-audio-init').click()"
+                  class="btn btn-sm" style="background:#003F7F;color:#fff;border-radius:.5rem;font-size:.82rem">
+            <i class="bi bi-upload me-1"></i>Uploader un audio
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
 </div>
 {% endif %}
 
@@ -138,10 +217,9 @@
     <div class="card h-100" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
       <div class="card-body px-4 py-3">
         <h5 style="font-size:.95rem;font-weight:700;color:#1a1a2e;margin-bottom:.2rem">
-          <span style="display:inline-block;width:4px;height:18px;background:{{ sd.couleur }};border-radius:2px;margin-right:.5rem;vertical-align:middle"></span>
-          Taux de réalisation
+          <span style="display:inline-block;width:4px;height:18px;background:{{ sd.couleur }};border-radius:2px;margin-right:.5rem;vertical-align:middle"></span>Taux de réalisation
         </h5>
-        <p style="font-size:.75rem;color:#9ca3af;margin-bottom:.75rem">Objectifs atteints — activités de la SD</p>
+        <p style="font-size:.75rem;color:#9ca3af;margin-bottom:.75rem">Objectifs — activités de la SD</p>
         <div class="text-center mb-2">
           <div style="position:relative;display:inline-block">
             <canvas id="chartObjectifs" width="180" height="180"></canvas>
@@ -152,22 +230,12 @@
           </div>
         </div>
         <div class="d-flex flex-column gap-1 mt-2">
+          {% for label, val, color in chart_legende %}
           <div class="d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center gap-2"><div style="width:10px;height:10px;border-radius:2px;background:#28a745;flex-shrink:0"></div><span style="font-size:.78rem;color:#374151">Clôturées</span></div>
-            <span style="font-size:.78rem;font-weight:700;color:#28a745">{{ stats.nb_activites_cloturees }}</span>
+            <div class="d-flex align-items-center gap-2"><div style="width:10px;height:10px;border-radius:2px;background:{{ color }};flex-shrink:0"></div><span style="font-size:.78rem;color:#374151">{{ label }}</span></div>
+            <span style="font-size:.78rem;font-weight:700;color:{{ color }}">{{ val }}</span>
           </div>
-          <div class="d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center gap-2"><div style="width:10px;height:10px;border-radius:2px;background:{{ sd.couleur }};flex-shrink:0"></div><span style="font-size:.78rem;color:#374151">En cours / Ouvertes</span></div>
-            <span style="font-size:.78rem;font-weight:700;color:{{ sd.couleur }}">{{ stats.nb_activites_ouvertes }}</span>
-          </div>
-          <div class="d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center gap-2"><div style="width:10px;height:10px;border-radius:2px;background:#F5A623;flex-shrink:0"></div><span style="font-size:.78rem;color:#374151">En attente</span></div>
-            <span style="font-size:.78rem;font-weight:700;color:#F5A623">{{ stats.nb_activites_en_attente }}</span>
-          </div>
-          <div class="d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center gap-2"><div style="width:10px;height:10px;border-radius:2px;background:#dc3545;flex-shrink:0"></div><span style="font-size:.78rem;color:#374151">En retard</span></div>
-            <span style="font-size:.78rem;font-weight:700;color:#dc3545">{{ stats.nb_activites_en_retard }}</span>
-          </div>
+          {% endfor %}
         </div>
       </div>
     </div>
@@ -177,9 +245,7 @@
   <div class="col-lg-8">
     <div class="card h-100" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
       <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid {{ sd.couleur }};border-radius:1rem 1rem 0 0">
-        <h5 style="margin:0;font-size:.95rem;font-weight:700;color:#1a1a2e">
-          <i class="bi bi-people me-2" style="color:{{ sd.couleur }}"></i>Équipe — {{ stats.nb_membres }} membre{% if stats.nb_membres > 1 %}s{% endif %}
-        </h5>
+        <h5 style="margin:0;font-size:.95rem;font-weight:700;color:#1a1a2e"><i class="bi bi-people me-2" style="color:{{ sd.couleur }}"></i>Équipe — {{ stats.nb_membres }} membre{% if stats.nb_membres > 1 %}s{% endif %}</h5>
         <p style="margin:0;font-size:.75rem;color:#9ca3af">Personnel actif, classé par grade</p>
       </div>
       <div class="card-body p-0" style="max-height:340px;overflow-y:auto">
@@ -207,16 +273,11 @@
             {% elif membre.role.niveau == 4 %}background:{{ sd.couleur }}18;color:{{ sd.couleur }};
             {% elif membre.role.niveau == 5 %}background:#06966618;color:#059669;
             {% elif membre.role.niveau == 6 %}background:#d9770618;color:#d97706;
-            {% else %}background:#6b728018;color:#6b7280;{% endif %}">
-            {{ membre.role.libelle }}
-          </span>
+            {% else %}background:#6b728018;color:#6b7280;{% endif %}">{{ membre.role.libelle }}</span>
           {% endif %}
         </div>
         {% empty %}
-        <div class="text-center py-5" style="color:#9ca3af">
-          <i class="bi bi-people display-6 d-block mb-2" style="opacity:.3"></i>
-          <p style="font-size:.85rem">Aucun membre affecté</p>
-        </div>
+        <div class="text-center py-5" style="color:#9ca3af"><i class="bi bi-people display-6 d-block mb-2" style="opacity:.3"></i><p style="font-size:.85rem">Aucun membre affecté</p></div>
         {% endfor %}
       </div>
     </div>
@@ -224,7 +285,7 @@
 </div>
 
 
-<!-- ══ SECTIONS + MODULES + PIP ═════════════════════════════════════════════ -->
+<!-- ══ SECTIONS + DOSSIERS ══════════════════════════════════════════════════ -->
 <div class="row g-4 mb-4">
 
   <!-- Sections -->
@@ -236,9 +297,7 @@
           <p style="margin:0;font-size:.75rem;color:#9ca3af">{{ stats.nb_sections }} section{% if stats.nb_sections > 1 %}s{% endif %}</p>
         </div>
         {% if peut_modifier %}
-        <a href="{% url 'organisation:section_create' %}" class="btn btn-sm" style="background:{{ sd.couleur }};color:{{ sd.couleur_texte }};border-radius:.5rem;font-size:.78rem">
-          <i class="bi bi-plus-lg"></i>
-        </a>
+        <a href="{% url 'organisation:section_create' %}" class="btn btn-sm" style="background:{{ sd.couleur }};color:{{ sd.couleur_texte }};border-radius:.5rem;font-size:.78rem"><i class="bi bi-plus-lg"></i></a>
         {% endif %}
       </div>
       <div class="card-body p-0">
@@ -264,68 +323,100 @@
     </div>
   </div>
 
-  <!-- Modules + PIP -->
-  <div class="col-lg-7 d-flex flex-column gap-4">
-
-    <!-- Modules -->
-    <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-      <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid {{ sd.couleur }};border-radius:1rem 1rem 0 0">
-        <h5 style="margin:0;font-size:.95rem;font-weight:700;color:#1a1a2e"><i class="bi bi-grid me-2" style="color:{{ sd.couleur }}"></i>Modules métier</h5>
+  <!-- Dossiers (remplace Modules métier) -->
+  <div class="col-lg-7">
+    <div class="card h-100" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-header px-4 py-3 d-flex align-items-center justify-content-between" style="background:#fff;border-bottom:2px solid {{ sd.couleur }};border-radius:1rem 1rem 0 0">
+        <div>
+          <h5 style="margin:0;font-size:.95rem;font-weight:700;color:#1a1a2e"><i class="bi bi-folder2 me-2" style="color:{{ sd.couleur }}"></i>Dossiers</h5>
+          <p style="margin:0;font-size:.75rem;color:#9ca3af">{{ dossiers_sd|length }} dossier{% if dossiers_sd|length > 1 %}s{% endif %} actif{% if dossiers_sd|length > 1 %}s{% endif %}</p>
+        </div>
+        <a href="{% url 'operations:dossier_create' %}" class="btn btn-sm" style="background:{{ sd.couleur }};color:{{ sd.couleur_texte }};border-radius:.5rem;font-size:.78rem">
+          <i class="bi bi-plus-lg me-1"></i>Nouveau
+        </a>
       </div>
-      <div class="card-body py-2 px-3">
-        {% for m in sd.get_modules %}
-        {% if m.disponible %}
-          <a href="{{ m.href }}" class="d-flex align-items-center gap-3 rounded px-3 py-2 mb-1 text-decoration-none" style="transition:background .15s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-            <span style="width:36px;height:36px;border-radius:.6rem;background:{{ sd.couleur }}18;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="{{ m.icone }}" style="color:{{ sd.couleur }}"></i></span>
-            <span style="font-size:.88rem;font-weight:600;color:#374151">{{ m.nom }}</span>
-            <i class="bi bi-arrow-right ms-auto" style="color:#9ca3af"></i>
-          </a>
-        {% else %}
-          <div class="d-flex align-items-center gap-3 rounded px-3 py-2 mb-1" style="opacity:.5">
-            <span style="width:36px;height:36px;border-radius:.6rem;background:#e5e7eb;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="{{ m.icone }}" style="color:#9ca3af"></i></span>
-            <span style="font-size:.88rem;color:#9ca3af">{{ m.nom }}</span>
-            <span class="ms-auto" style="font-size:.65rem;background:#e5e7eb;color:#6b7280;padding:.15rem .45rem;border-radius:.3rem;font-weight:600">P3</span>
+      <div class="card-body p-0" style="max-height:340px;overflow-y:auto">
+        {% regroup dossiers_sd by section as sections_dossiers %}
+        {% for groupe in sections_dossiers %}
+        <div class="px-4 pt-3 pb-1" style="background:#f8fafc;border-bottom:1px solid #f0f0f0">
+          <span style="font-size:.7rem;font-weight:700;color:{{ sd.couleur }};text-transform:uppercase;letter-spacing:.06em">
+            <i class="bi bi-layers me-1"></i>{{ groupe.grouper.code }} — {{ groupe.grouper.libelle }}
+          </span>
+        </div>
+        {% for dossier in groupe.list %}
+        <a href="{% url 'operations:dossier_detail' dossier.pk %}" class="text-decoration-none">
+          <div class="d-flex align-items-center px-4 py-3 dossier-row {% if not forloop.last %}border-bottom{% endif %}" style="border-color:#f8f8f8;transition:background .15s">
+            <div class="me-3" style="width:38px;height:38px;border-radius:.6rem;background:{{ sd.couleur }}14;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="bi bi-folder2-open" style="color:{{ sd.couleur }};font-size:.9rem"></i>
+            </div>
+            <div class="flex-grow-1 min-w-0">
+              <div style="font-size:.88rem;font-weight:600;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ dossier.titre }}</div>
+              <div class="d-flex align-items-center gap-2 mt-1">
+                <div class="progress" style="height:4px;width:60px;border-radius:2px">
+                  <div class="progress-bar" style="width:{{ dossier.taux_completion }}%;background:{{ sd.couleur }}"></div>
+                </div>
+                <span style="font-size:.72rem;color:#9ca3af">{{ dossier.taux_completion }}%</span>
+              </div>
+            </div>
+            <div class="text-end ms-3 flex-shrink-0">
+              <div style="font-size:.88rem;font-weight:700;color:{{ sd.couleur }}">{{ dossier.nb_activites }}</div>
+              <div style="font-size:.68rem;color:#9ca3af">activité{% if dossier.nb_activites > 1 %}s{% endif %}</div>
+            </div>
+            <i class="bi bi-arrow-right ms-3" style="color:#d1d5db;font-size:.85rem"></i>
           </div>
-        {% endif %}
+        </a>
+        {% endfor %}
         {% empty %}
-          <p class="text-muted text-center py-3" style="font-size:.85rem">Aucun module configuré</p>
+        <div class="text-center py-5" style="color:#9ca3af">
+          <i class="bi bi-folder2 display-5 d-block mb-2" style="opacity:.3"></i>
+          <p style="font-size:.85rem">Aucun dossier dans cette sous-direction</p>
+          <a href="{% url 'operations:dossier_create' %}" class="btn btn-sm" style="background:{{ sd.couleur }};color:{{ sd.couleur_texte }};border-radius:.5rem;font-size:.8rem">
+            <i class="bi bi-plus-lg me-1"></i>Créer un dossier
+          </a>
+        </div>
         {% endfor %}
       </div>
     </div>
+  </div>
 
-    <!-- PIP -->
+</div>
+
+
+<!-- ══ PIP ══════════════════════════════════════════════════════════════════ -->
+<div class="row g-4 mb-4">
+  <div class="col-12">
     <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
       <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid {{ sd.couleur }};border-radius:1rem 1rem 0 0">
         <h5 style="margin:0;font-size:.95rem;font-weight:700;color:#1a1a2e"><i class="bi bi-diagram-3 me-2" style="color:{{ sd.couleur }}"></i>Partenaires PIP</h5>
       </div>
       <div class="card-body py-2 px-3">
+        <div class="row g-2">
         {% for pip in pips_actifs %}
-        <div class="d-flex align-items-center gap-3 py-2 {% if not forloop.last %}border-bottom{% endif %}" style="border-color:#f8f8f8">
-          <span class="badge" style="background:{{ sd.couleur }}18;color:{{ sd.couleur }};font-weight:700;font-size:.72rem">{{ pip.code }}</span>
-          <div class="flex-grow-1">
-            <div style="font-size:.83rem;font-weight:500;color:#374151">{{ pip.libelle }}</div>
-            {% if pip.email %}<div style="font-size:.73rem;color:#9ca3af">{{ pip.email }}</div>{% endif %}
+          <div class="col-md-4">
+            <div class="d-flex align-items-center gap-2 rounded px-3 py-2" style="background:#f8fafc;border:1px solid #f0f0f0">
+              <span class="badge" style="background:{{ sd.couleur }}18;color:{{ sd.couleur }};font-weight:700;font-size:.72rem">{{ pip.code }}</span>
+              <div>
+                <div style="font-size:.83rem;font-weight:500;color:#374151">{{ pip.libelle }}</div>
+                {% if pip.email %}<div style="font-size:.72rem;color:#9ca3af">{{ pip.email }}</div>{% endif %}
+              </div>
+            </div>
           </div>
-        </div>
         {% empty %}
-        <p class="text-muted text-center py-3" style="font-size:.85rem">Aucun PIP associé</p>
+          <div class="col-12 text-center py-3" style="color:#9ca3af;font-size:.85rem">Aucun PIP associé</div>
         {% endfor %}
+        </div>
       </div>
     </div>
-
   </div>
 </div>
 
 
 <!-- ══ COMPTES COMPTABLES ════════════════════════════════════════════════════ -->
 <div class="card mb-4" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-  <div class="card-header px-4 py-3 d-flex align-items-center justify-content-between"
-       style="background:#fff;border-bottom:2px solid {{ sd.couleur }};border-radius:1rem 1rem 0 0">
+  <div class="card-header px-4 py-3 d-flex align-items-center justify-content-between" style="background:#fff;border-bottom:2px solid {{ sd.couleur }};border-radius:1rem 1rem 0 0">
     <div>
-      <h5 style="margin:0;font-size:.95rem;font-weight:700;color:#1a1a2e">
-        <i class="bi bi-journal-bookmark me-2" style="color:{{ sd.couleur }}"></i>Comptes Comptables suivis
-      </h5>
-      <p style="margin:0;font-size:.75rem;color:#9ca3af">{{ sd.comptes.count }} compte{% if sd.comptes.count > 1 %}s{% endif %} rattaché{% if sd.comptes.count > 1 %}s{% endif %} à la {{ sd.code }}</p>
+      <h5 style="margin:0;font-size:.95rem;font-weight:700;color:#1a1a2e"><i class="bi bi-journal-bookmark me-2" style="color:{{ sd.couleur }}"></i>Comptes Comptables suivis</h5>
+      <p style="margin:0;font-size:.75rem;color:#9ca3af">{{ sd.comptes.count }} compte{% if sd.comptes.count > 1 %}s{% endif %} rattaché{% if sd.comptes.count > 1 %}s{% endif %}</p>
     </div>
     {% if peut_modifier %}
     <button onclick="var f=document.getElementById('form-add-compte');f.style.display=f.style.display==='none'?'block':'none'"
@@ -334,121 +425,69 @@
     </button>
     {% endif %}
   </div>
-
-  <!-- Formulaire ajout compte -->
   {% if peut_modifier %}
   <div id="form-add-compte" style="display:none;background:#f8fafc;border-bottom:1px solid #e5e7eb;padding:1.25rem 1.5rem">
-    <form method="post" action="{% url 'organisation:sd_comptes' sd.pk %}">
-      {% csrf_token %}
+    <form method="post" action="{% url 'organisation:sd_comptes' sd.pk %}">{% csrf_token %}
       <div class="row g-2 align-items-end">
         <div class="col-md-6">
-          <label style="font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:.3rem">
-            Compte comptable <span class="text-danger">*</span>
-          </label>
+          <label style="font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:.3rem">Compte comptable <span class="text-danger">*</span></label>
           <select name="compte_id" class="form-select form-select-sm" required>
             <option value="">— Sélectionner un compte —</option>
             {% regroup comptes_disponibles by get_type_compte_display as type_list %}
             {% for type in type_list %}
-            <optgroup label="{{ type.grouper }}">
-              {% for c in type.list %}
-              <option value="{{ c.pk }}">{{ c.numero }} — {{ c.libelle }}</option>
-              {% endfor %}
-            </optgroup>
+            <optgroup label="{{ type.grouper }}">{% for c in type.list %}<option value="{{ c.pk }}">{{ c.numero }} — {{ c.libelle }}</option>{% endfor %}</optgroup>
             {% endfor %}
           </select>
         </div>
-        <div class="col-md-4">
-          <label style="font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:.3rem">Note (optionnelle)</label>
-          <input type="text" name="note" class="form-control form-control-sm" placeholder="Ex: suivi mensuel, arrêté comptable...">
-        </div>
-        <div class="col-md-2">
-          <button type="submit" class="btn btn-sm w-100 fw-bold"
-                  style="background:{{ sd.couleur }};color:{{ sd.couleur_texte }};border-radius:.5rem;font-size:.82rem">
-            <i class="bi bi-plus-circle me-1"></i>Ajouter
-          </button>
-        </div>
+        <div class="col-md-4"><label style="font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:.3rem">Note</label><input type="text" name="note" class="form-control form-control-sm" placeholder="Ex: suivi mensuel"></div>
+        <div class="col-md-2"><button type="submit" class="btn btn-sm w-100 fw-bold" style="background:{{ sd.couleur }};color:{{ sd.couleur_texte }};border-radius:.5rem"><i class="bi bi-plus-circle me-1"></i>Ajouter</button></div>
       </div>
     </form>
   </div>
   {% endif %}
-
-  <!-- Liste des comptes -->
   <div class="card-body p-0">
     {% for lien in sd.comptes.all %}
     <div class="d-flex align-items-center gap-3 px-4 py-3 {% if not forloop.last %}border-bottom{% endif %}" style="border-color:#f8f8f8">
-      <!-- Numéro de compte -->
-      <div style="flex-shrink:0;min-width:80px;text-align:right">
-        <span style="font-size:.92rem;font-weight:800;color:{{ sd.couleur }};font-family:monospace;letter-spacing:.02em">{{ lien.compte.numero }}</span>
-      </div>
-      <!-- Séparateur vertical -->
+      <div style="flex-shrink:0;min-width:80px;text-align:right"><span style="font-size:.92rem;font-weight:800;color:{{ sd.couleur }};font-family:monospace">{{ lien.compte.numero }}</span></div>
       <div style="width:1px;height:30px;background:#e5e7eb;flex-shrink:0"></div>
-      <!-- Infos compte -->
       <div class="flex-grow-1">
         <div style="font-size:.88rem;font-weight:600;color:#1a1a2e">{{ lien.compte.libelle }}</div>
         <div class="d-flex align-items-center gap-2 mt-1">
-          <span style="font-size:.68rem;font-weight:600;background:{{ sd.couleur }}12;color:{{ sd.couleur }};padding:.1rem .45rem;border-radius:.3rem">
-            {{ lien.compte.get_type_compte_display }}
-          </span>
-          {% if lien.note %}
-          <span style="font-size:.73rem;color:#9ca3af;font-style:italic">
-            <i class="bi bi-chat-left-text me-1"></i>{{ lien.note }}
-          </span>
-          {% endif %}
+          <span style="font-size:.68rem;font-weight:600;background:{{ sd.couleur }}12;color:{{ sd.couleur }};padding:.1rem .45rem;border-radius:.3rem">{{ lien.compte.get_type_compte_display }}</span>
+          {% if lien.note %}<span style="font-size:.73rem;color:#9ca3af;font-style:italic"><i class="bi bi-chat-left-text me-1"></i>{{ lien.note }}</span>{% endif %}
         </div>
       </div>
-      <!-- Supprimer -->
       {% if peut_modifier %}
-      <form method="post" action="{% url 'organisation:sd_compte_retirer' sd.pk lien.compte.pk %}"
-            onsubmit="return confirm('Retirer le compte {{ lien.compte.numero }} de cette sous-direction ?')">
-        {% csrf_token %}
-        <button type="submit" style="background:none;border:1px solid #fee2e2;color:#dc2626;cursor:pointer;padding:.3rem .5rem;border-radius:.4rem;transition:background .15s"
-                title="Retirer" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">
-          <i class="bi bi-trash3" style="font-size:.8rem"></i>
-        </button>
+      <form method="post" action="{% url 'organisation:sd_compte_retirer' sd.pk lien.compte.pk %}" onsubmit="return confirm('Retirer ce compte ?')">{% csrf_token %}
+        <button type="submit" style="background:none;border:1px solid #fee2e2;color:#dc2626;cursor:pointer;padding:.3rem .5rem;border-radius:.4rem" title="Retirer"><i class="bi bi-trash3" style="font-size:.8rem"></i></button>
       </form>
       {% endif %}
     </div>
     {% empty %}
-    <div class="text-center py-5" style="color:#9ca3af;font-size:.85rem">
-      <i class="bi bi-journal-bookmark display-5 d-block mb-2" style="opacity:.25"></i>
-      Aucun compte comptable associé à cette sous-direction.
-      {% if peut_modifier %}<br><span style="font-size:.8rem">Cliquez sur "Ajouter un compte" pour en associer.</span>{% endif %}
-    </div>
+    <div class="text-center py-5" style="color:#9ca3af;font-size:.85rem"><i class="bi bi-journal-bookmark display-5 d-block mb-2" style="opacity:.25"></i>Aucun compte comptable associé</div>
     {% endfor %}
   </div>
 </div>
 
 
-<!-- ══ MODAL PHOTO RESPONSABLE ══════════════════════════════════════════════ -->
+<!-- ══ MODAL PHOTO ═══════════════════════════════════════════════════════════ -->
 {% if peut_modifier and sd.responsable %}
-<div id="modal-photo" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center"
-     onclick="if(event.target===this)this.style.display='none'">
+<div id="modal-photo" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
   <div style="background:#fff;border-radius:1rem;padding:2rem;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div class="d-flex align-items-center justify-content-between mb-3">
       <h5 style="margin:0;font-size:1rem;font-weight:700;color:#1a1a2e"><i class="bi bi-camera me-2" style="color:{{ sd.couleur }}"></i>Photo du responsable</h5>
       <button onclick="document.getElementById('modal-photo').style.display='none'" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#6b7280">&times;</button>
     </div>
     <div class="text-center mb-3">
-      {% if sd.responsable.photo %}
-        <img src="{{ sd.responsable.photo.url }}" id="preview-photo" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid {{ sd.couleur }}44">
-      {% else %}
-        <div id="preview-photo" style="width:80px;height:80px;border-radius:50%;background:{{ sd.couleur }}18;display:inline-flex;align-items:center;justify-content:center;border:3px solid {{ sd.couleur }}44">
-          <i class="bi bi-person-fill" style="font-size:2rem;color:{{ sd.couleur }}"></i>
-        </div>
-      {% endif %}
+      {% if sd.responsable.photo %}<img src="{{ sd.responsable.photo.url }}" id="preview-photo" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid {{ sd.couleur }}44">
+      {% else %}<div id="preview-photo" style="width:80px;height:80px;border-radius:50%;background:{{ sd.couleur }}18;display:inline-flex;align-items:center;justify-content:center;border:3px solid {{ sd.couleur }}44"><i class="bi bi-person-fill" style="font-size:2rem;color:{{ sd.couleur }}"></i></div>{% endif %}
       <div style="font-size:.82rem;color:#6b7280;margin-top:.5rem"><strong>{{ sd.responsable.nom_complet }}</strong></div>
     </div>
-    <form method="post" enctype="multipart/form-data" action="{% url 'organisation:sd_photo_responsable' sd.pk %}">
-      {% csrf_token %}
-      <div class="mb-3">
-        <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">Sélectionner une image</label>
-        <input type="file" name="photo" accept="image/*" class="form-control form-control-sm" onchange="previewPhoto(this)">
-        <div style="font-size:.72rem;color:#9ca3af;margin-top:.3rem">JPG, PNG ou GIF — max 5 Mo — format carré recommandé</div>
-      </div>
+    <form method="post" enctype="multipart/form-data" action="{% url 'organisation:sd_photo_responsable' sd.pk %}">{% csrf_token %}
+      <div class="mb-3"><label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">Sélectionner une image</label>
+      <input type="file" name="photo" accept="image/*" class="form-control form-control-sm" onchange="previewPhoto(this)"></div>
       <div class="d-flex gap-2">
-        <button type="submit" class="btn btn-sm flex-grow-1 fw-bold" style="background:{{ sd.couleur }};color:{{ sd.couleur_texte }};border-radius:.5rem">
-          <i class="bi bi-check-lg me-1"></i>Enregistrer
-        </button>
+        <button type="submit" class="btn btn-sm flex-grow-1 fw-bold" style="background:{{ sd.couleur }};color:{{ sd.couleur_texte }};border-radius:.5rem"><i class="bi bi-check-lg me-1"></i>Enregistrer</button>
         <button type="button" onclick="document.getElementById('modal-photo').style.display='none'" class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem">Annuler</button>
       </div>
     </form>
@@ -457,12 +496,98 @@
 {% endif %}
 
 <style>
-.membre-row:hover { background:#f8fafc !important; }
+.membre-row:hover, .dossier-row:hover { background:#f8fafc !important; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+@keyframes wave {
+  0%   { height: 4px; }
+  100% { height: 20px; }
+}
+.wave-bar { min-height: 4px; }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+// ── Typewriter effect pour la description ─────────────────────────────────
+(function() {
+  var src = document.getElementById('typewriter-source');
+  if (!src) return;
+  var text    = src.textContent;
+  var target  = document.getElementById('typewriter-text');
+  var cursor  = document.getElementById('typewriter-cursor');
+  var i       = 0;
+  var speed   = 18; // ms par caractère
+
+  function type() {
+    if (i < text.length) {
+      target.textContent += text.charAt(i);
+      i++;
+      setTimeout(type, speed);
+    } else {
+      // Texte terminé : faire clignoter le curseur 2s puis le cacher
+      setTimeout(function() {
+        cursor.style.display = 'none';
+      }, 2000);
+    }
+  }
+
+  // Démarrer après un court délai (page chargée)
+  setTimeout(type, 600);
+})();
+
+// ── Lecteur audio ─────────────────────────────────────────────────────────
+var audio = document.getElementById('sd-audio');
+if (audio) {
+  audio.addEventListener('loadedmetadata', function() {
+    document.getElementById('audio-duration').textContent = formatTime(audio.duration);
+  });
+}
+
+function toggleAudio() {
+  if (!audio) return;
+  if (audio.paused) {
+    audio.play();
+    document.getElementById('audio-play-icon').className = 'bi bi-pause-fill';
+    document.getElementById('audio-play-icon').style.marginLeft = '0';
+    document.getElementById('audio-waves').style.display = 'flex';
+  } else {
+    audio.pause();
+    document.getElementById('audio-play-icon').className = 'bi bi-play-fill';
+    document.getElementById('audio-play-icon').style.marginLeft = '4px';
+    document.getElementById('audio-waves').style.display = 'none';
+  }
+}
+
+function updateProgress() {
+  if (!audio || !audio.duration) return;
+  var pct = (audio.currentTime / audio.duration) * 100;
+  document.getElementById('audio-progress').style.width = pct + '%';
+  document.getElementById('audio-current').textContent = formatTime(audio.currentTime);
+}
+
+function onAudioEnd() {
+  document.getElementById('audio-play-icon').className = 'bi bi-play-fill';
+  document.getElementById('audio-play-icon').style.marginLeft = '4px';
+  document.getElementById('audio-waves').style.display = 'none';
+  document.getElementById('audio-progress').style.width = '0%';
+  document.getElementById('audio-current').textContent = '0:00';
+}
+
+function seekAudio(e, bar) {
+  if (!audio) return;
+  var rect = bar.getBoundingClientRect();
+  var pct  = (e.clientX - rect.left) / rect.width;
+  audio.currentTime = pct * audio.duration;
+}
+
+function formatTime(s) {
+  if (isNaN(s)) return '--:--';
+  var m = Math.floor(s / 60);
+  var sec = Math.floor(s % 60);
+  return m + ':' + (sec < 10 ? '0' : '') + sec;
+}
+
+// ── Pie chart ─────────────────────────────────────────────────────────────
 new Chart(document.getElementById('chartObjectifs'), {
   type: 'doughnut',
   data: {
@@ -476,14 +601,14 @@ new Chart(document.getElementById('chartObjectifs'), {
   }
 });
 
+// ── Photo preview ─────────────────────────────────────────────────────────
 function previewPhoto(input) {
   if (input.files && input.files[0]) {
     var reader = new FileReader();
     reader.onload = function(e) {
       var prev = document.getElementById('preview-photo');
-      if (prev.tagName === 'IMG') {
-        prev.src = e.target.result;
-      } else {
+      if (prev.tagName === 'IMG') { prev.src = e.target.result; }
+      else {
         var img = document.createElement('img');
         img.id = 'preview-photo';
         img.src = e.target.result;

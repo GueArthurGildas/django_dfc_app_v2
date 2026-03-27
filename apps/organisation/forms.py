@@ -11,11 +11,12 @@ Utilisateur = get_user_model()
 class SousDirectionForm(forms.ModelForm):
     class Meta:
         model  = SousDirection
-        fields = ['code', 'libelle', 'description', 'mission', 'couleur', 'responsable', 'ordre', 'actif']
+        fields = ['code', 'libelle', 'description', 'mission', 'audio_resume', 'couleur', 'responsable', 'ordre', 'actif']
         widgets = {
             'code':        forms.TextInput(attrs=W),
             'libelle':     forms.TextInput(attrs=W),
             'description': forms.Textarea(attrs={**W, 'rows': 3}),
+            'audio_resume': forms.FileInput(attrs={'class': 'form-control form-control-sm', 'accept': 'audio/*'}),
             'mission':     forms.Textarea(attrs={**W, 'rows': 5,
                            'placeholder': 'Décrivez la mission, les objectifs stratégiques et les attentes de la sous-direction...'}),
             'couleur':     forms.Select(attrs=WS, choices=COULEURS_SD),
