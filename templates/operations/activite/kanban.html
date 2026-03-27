@@ -89,7 +89,8 @@
 
 {% block extra_js %}
 <script>
-const STATUT_URL = "{% url 'operations:activite_statut' 0 %}".replace('/0/', '/');
+// Construire l'URL correctement : remplace le 0 par l'ID réel de l'activité
+const STATUT_URL_TPL = "{% url 'operations:activite_statut' 0 %}";
 const CSRF = "{{ csrf_token }}";
 
 let draggedCard = null;
@@ -118,7 +119,8 @@ document.querySelectorAll('.kanban-col').forEach(col => {
     const newStatut = col.dataset.statut;
     const id = draggedCard.dataset.id;
     col.appendChild(draggedCard);
-    fetch(STATUT_URL + id + '/statut/', {
+    const url = STATUT_URL_TPL.replace('/0/', '/' + id + '/');
+    fetch(url, {
       method: 'POST',
       headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
       body: JSON.stringify({statut: newStatut})
