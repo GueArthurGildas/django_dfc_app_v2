@@ -46,10 +46,49 @@
   </div>
 </div>
 
+<!-- Barre de recherche -->
+<div class="card mb-3" style="border:none;border-radius:.75rem;box-shadow:0 2px 8px rgba(0,0,0,.08)">
+  <div class="card-body py-2 px-3">
+    <form method="get" id="search-form">
+      {% if filtre_statut %}<input type="hidden" name="statut" value="{{ filtre_statut }}">{% endif %}
+      {% if filtre_sd %}<input type="hidden" name="sd" value="{{ filtre_sd }}">{% endif %}
+      {% if filtre_annee %}<input type="hidden" name="annee" value="{{ filtre_annee }}">{% endif %}
+      {% if filtre_mois %}<input type="hidden" name="mois" value="{{ filtre_mois }}">{% endif %}
+      {% if filtre_assignee %}<input type="hidden" name="assignee" value="{{ filtre_assignee }}">{% endif %}
+      <div class="input-group input-group-sm">
+        <span class="input-group-text" style="background:#f8fafc;border-color:#e5e7eb;border-right:none">
+          <i class="bi bi-search" style="color:#9ca3af"></i>
+        </span>
+        <input type="text" name="q" value="{{ filtre_q }}"
+               class="form-control" id="search-input"
+               placeholder="Rechercher par titre, dossier, section, sous-direction..."
+               style="border-color:#e5e7eb;border-left:none;font-size:.88rem"
+               autocomplete="off">
+        {% if filtre_q %}
+        <a href="?{% if filtre_statut %}statut={{ filtre_statut }}&{% endif %}{% if filtre_sd %}sd={{ filtre_sd }}&{% endif %}{% if filtre_annee %}annee={{ filtre_annee }}&{% endif %}{% if filtre_mois %}mois={{ filtre_mois }}&{% endif %}{% if filtre_assignee %}assignee={{ filtre_assignee }}{% endif %}"
+           class="btn btn-sm" style="background:#f8fafc;border:1px solid #e5e7eb;border-left:none;color:#6b7280" title="Effacer la recherche">
+          <i class="bi bi-x-lg"></i>
+        </a>
+        {% endif %}
+        <button type="submit" class="btn btn-sm" style="background:#003F7F;color:#fff;border-radius:0 .4rem .4rem 0;padding:.3rem .75rem">
+          Rechercher
+        </button>
+      </div>
+      {% if filtre_q %}
+      <div style="font-size:.75rem;color:#6b7280;margin-top:.4rem">
+        <i class="bi bi-info-circle me-1"></i>
+        Résultats pour <strong>« {{ filtre_q }} »</strong> — {{ page_obj.paginator.count }} activité{% if page_obj.paginator.count > 1 %}s{% endif %} trouvée{% if page_obj.paginator.count > 1 %}s{% endif %}
+      </div>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
 <!-- Filtres -->
 <div class="card mb-3" style="border:none;border-radius:.75rem;box-shadow:0 1px 6px rgba(0,0,0,.06)">
   <div class="card-body py-2 px-3">
     <form method="get" class="d-flex align-items-center gap-2 flex-wrap">
+      {% if filtre_q %}<input type="hidden" name="q" value="{{ filtre_q }}">{% endif %}
       <span style="font-size:.8rem;font-weight:600;color:#374151"><i class="bi bi-funnel me-1"></i>Filtres</span>
 
       <select name="statut" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
@@ -82,8 +121,9 @@
       </select>
 
       {% if filtre_statut or filtre_sd or filtre_annee or filtre_mois or filtre_assignee %}
-      <a href="{% url 'operations:activite_list' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.4rem;font-size:.78rem">
-        <i class="bi bi-x me-1"></i>Effacer
+      <a href="{% url 'operations:activite_list' %}{% if filtre_q %}?q={{ filtre_q }}{% endif %}"
+         class="btn btn-sm btn-outline-secondary" style="border-radius:.4rem;font-size:.78rem">
+        <i class="bi bi-x me-1"></i>Effacer filtres
       </a>
       {% endif %}
 

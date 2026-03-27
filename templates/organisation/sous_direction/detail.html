@@ -53,12 +53,18 @@
       </div>
 
       <!-- Bouton modifier -->
-      {% if peut_modifier %}
-      <a href="{% url 'organisation:sd_update' sd.pk %}"
-         class="btn btn-sm" style="background:rgba(255,255,255,.2);color:{{ sd.couleur_texte }};border:1px solid rgba(255,255,255,.4);border-radius:.5rem">
-        <i class="bi bi-pencil me-1"></i>Modifier
-      </a>
-      {% endif %}
+      <div class="d-flex gap-2">
+        <a href="{% url 'operations:activite_list' %}?sd={{ sd.pk }}"
+           class="btn btn-sm" style="background:rgba(255,255,255,.15);color:{{ sd.couleur_texte }};border:1px solid rgba(255,255,255,.35);border-radius:.5rem">
+          <i class="bi bi-check2-square me-1"></i>Activités
+        </a>
+        {% if peut_modifier %}
+        <a href="{% url 'organisation:sd_update' sd.pk %}"
+           class="btn btn-sm" style="background:rgba(255,255,255,.2);color:{{ sd.couleur_texte }};border:1px solid rgba(255,255,255,.4);border-radius:.5rem">
+          <i class="bi bi-pencil me-1"></i>Modifier
+        </a>
+        {% endif %}
+      </div>
     </div>
     {% if sd.description %}
     <p style="color:{{ sd.couleur_texte }};opacity:.85;font-size:.88rem;margin:0 0 1rem;line-height:1.6;max-width:70ch">{{ sd.description }}</p>

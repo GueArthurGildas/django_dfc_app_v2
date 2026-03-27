@@ -157,6 +157,11 @@
            style="background:{{ couleur }};color:{{ texte }};border:none;border-radius:.5rem;font-size:.82rem">
           <i class="bi bi-arrow-right-circle me-1"></i>Accéder
         </a>
+        <a href="{% url 'operations:activite_list' %}?sd={{ sd.pk }}"
+           class="btn btn-sm btn-outline-secondary"
+           style="border-radius:.5rem;font-size:.82rem" title="Voir les activités de {{ sd.code }}">
+          <i class="bi bi-check2-square"></i>
+        </a>
         {% if request.user.role.code == 'admin' %}
         <a href="{% url 'organisation:sd_update' sd.pk %}"
            class="btn btn-sm btn-outline-secondary"

@@ -112,6 +112,15 @@ class ActiviteListView(LoginRequiredMixin, ListView):
         assignee = self.request.GET.get('assignee')
         annee    = self.request.GET.get('annee')
         mois     = self.request.GET.get('mois')
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            qs = qs.filter(
+                Q(titre__icontains=q) |
+                Q(description__icontains=q) |
+                Q(dossier__titre__icontains=q) |
+                Q(section__libelle__icontains=q) |
+                Q(section__sous_direction__code__icontains=q)
+            ).distinct()
         if statut:
             qs = qs.filter(statut=statut)
         if sd_id:
@@ -136,6 +145,7 @@ class ActiviteListView(LoginRequiredMixin, ListView):
         ctx['filtre_sd']       = self.request.GET.get('sd', '')
         ctx['filtre_assignee'] = assignee
         ctx['filtre_annee']    = self.request.GET.get('annee', '')
+        ctx['filtre_q']        = self.request.GET.get('q', '')
         ctx['filtre_mois']     = self.request.GET.get('mois', '')
         ctx['today']           = timezone.now().date()
         # Années disponibles pour le filtre
@@ -238,12 +248,28 @@ class ActiviteUpdateView(LoginRequiredMixin, UpdateView):
 
 class CommenterView(LoginRequiredMixin, View):
     def post(self, request, pk):
-        activite = get_object_or_404(Activite, pk=pk)
-        form = CommentaireForm(request.POST)
-        if form.is_valid():
-            d = form.cleaned_data
-            ActiviteService.mettre_a_jour(activite, activite.statut, d['avancement'], d['contenu'], request.user, d['type_comment'])
-            messages.success(request, "Commentaire ajouté.")
+        activite    = get_object_or_404(Activite, pk=pk)
+        contenu     = request.POST.get('contenu', '').strip()
+        type_comment= request.POST.get('type_comment', 'mise_a_jour')
+        avancement  = int(request.POST.get('avancement', activite.etat_avancement))
+        statut      = request.POST.get('statut', activite.statut)
+
+        # Validation basique
+        if not contenu:
+            messages.error(request, "Le commentaire ne peut pas être vide.")
+            return redirect('operations:activite_detail', pk=pk)
+
+        # Transition automatique selon l'avancement si statut non fourni explicitement
+        if statut not in dict(Activite.STATUTS):
+            statut = activite.statut
+        # Si l'avancement progresse et que l'activité est encore "ouverte" → en_cours
+        if avancement > 0 and statut == 'ouverte':
+            statut = 'en_cours'
+
+        ActiviteService.mettre_a_jour(
+            activite, statut, avancement, contenu, request.user, type_comment
+        )
+        messages.success(request, "Suivi enregistré.")
         return redirect('operations:activite_detail', pk=pk)
 
 

@@ -127,20 +127,82 @@
         <p style="font-size:.85rem;color:#9ca3af;text-align:center;padding:1rem 0">Aucun commentaire pour l'instant.</p>
         {% endfor %}
 
-        <!-- Formulaire commentaire -->
+        <!-- Formulaire de suivi -->
         {% if activite.statut != 'cloturee' %}
         <div class="border-top pt-3 mt-2" style="border-color:#f0f0f0!important">
-          <h6 style="font-size:.82rem;font-weight:700;color:#374151;margin-bottom:.75rem">Ajouter un suivi</h6>
+          <h6 style="font-size:.88rem;font-weight:700;color:#1a1a2e;margin-bottom:1rem">
+            <i class="bi bi-pencil-square me-2" style="color:{{ activite.section.sous_direction.couleur }}"></i>Mettre à jour le suivi
+          </h6>
           <form method="post" action="{% url 'operations:activite_commenter' activite.pk %}">
             {% csrf_token %}
-            <div class="mb-2">{{ comment_form.type_comment }}</div>
-            <div class="mb-2">{{ comment_form.contenu }}</div>
-            <div class="mb-2">
-              <label style="font-size:.8rem;font-weight:600;color:#374151">Avancement déclaré : <span id="avancement_val">{{ activite.etat_avancement }}%</span></label>
-              <input type="range" name="avancement" class="form-range" min="0" max="100" value="{{ activite.etat_avancement }}"
-                     oninput="document.getElementById('avancement_val').textContent=this.value+'%'">
+
+            <!-- Statut -->
+            <div class="mb-3">
+              <label style="font-size:.8rem;font-weight:600;color:#374151;display:block;margin-bottom:.4rem">
+                Statut <span class="text-danger">*</span>
+              </label>
+              <div class="d-flex gap-2 flex-wrap" id="statut-btns">
+                {% for val, label in activite.STATUTS %}
+                {% if val != 'cloturee' %}
+                <label class="statut-btn d-flex align-items-center gap-2 px-3 py-2 rounded"
+                       style="cursor:pointer;border:2px solid #e5e7eb;font-size:.82rem;font-weight:500;transition:all .15s;
+                       {% if activite.statut == val %}border-color:{{ activite.section.sous_direction.couleur }};background:{{ activite.section.sous_direction.couleur }}12;{% endif %}">
+                  <input type="radio" name="statut" value="{{ val }}"
+                         {% if activite.statut == val %}checked{% endif %}
+                         style="display:none" onchange="onStatutChange(this)">
+                  <span class="statut-dot" style="width:8px;height:8px;border-radius:50%;flex-shrink:0;
+                    {% if val == 'ouverte' %}background:#003F7F;
+                    {% elif val == 'en_cours' %}background:#F5A623;
+                    {% elif val == 'en_attente' %}background:#6c757d;{% endif %}"></span>
+                  {{ label }}
+                </label>
+                {% endif %}
+                {% endfor %}
+              </div>
+              <div id="statut-hint" style="font-size:.72rem;color:#9ca3af;margin-top:.4rem">
+                Le statut se met aussi à jour automatiquement selon l'avancement déclaré
+              </div>
             </div>
-            <button type="submit" class="btn btn-sm" style="background:{{ activite.section.sous_direction.couleur }};color:{{ activite.section.sous_direction.couleur_texte }};border-radius:.5rem"><i class="bi bi-send me-1"></i>Enregistrer</button>
+
+            <!-- Slider avancement -->
+            <div class="mb-3">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <label style="font-size:.8rem;font-weight:600;color:#374151">Avancement déclaré</label>
+                <span id="avancement_val" style="font-size:1.1rem;font-weight:800;color:{{ activite.section.sous_direction.couleur }}">
+                  {{ activite.etat_avancement }}%
+                </span>
+              </div>
+              <input type="range" name="avancement" id="avancement-slider"
+                     class="form-range" min="0" max="100"
+                     value="{{ activite.etat_avancement }}"
+                     style="accent-color:{{ activite.section.sous_direction.couleur }}"
+                     oninput="onAvancementChange(this.value)">
+              <div class="d-flex justify-content-between" style="font-size:.68rem;color:#9ca3af;margin-top:.2rem">
+                <span>0% — Non commencé</span>
+                <span>50% — En cours</span>
+                <span>100% — Terminé</span>
+              </div>
+            </div>
+
+            <!-- Commentaire -->
+            <div class="mb-3">
+              <label style="font-size:.8rem;font-weight:600;color:#374151;display:block;margin-bottom:.3rem">
+                Commentaire <span class="text-danger">*</span>
+              </label>
+              <select name="type_comment" class="form-select form-select-sm mb-2">
+                <option value="mise_a_jour">Mise à jour</option>
+                <option value="commentaire">Commentaire libre</option>
+                <option value="alerte">Alerte / blocage</option>
+              </select>
+              <textarea name="contenu" class="form-control form-control-sm" rows="2"
+                        placeholder="Décrivez l'avancement, les actions réalisées, les blocages éventuels..."
+                        required style="font-size:.85rem"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-sm fw-bold"
+                    style="background:{{ activite.section.sous_direction.couleur }};color:{{ activite.section.sous_direction.couleur_texte }};border-radius:.5rem;padding:.4rem 1.25rem">
+              <i class="bi bi-send me-1"></i>Enregistrer le suivi
+            </button>
           </form>
         </div>
         {% endif %}
@@ -516,6 +578,53 @@ document.querySelectorAll('.doc-save-btn').forEach(function(btn) {
     })
     .catch(() => alert('Erreur réseau — vérifiez votre connexion.'));
   });
+});
+
+// ── Formulaire de suivi : synchronisation statut ↔ avancement ──────────────
+var couleurSD = '{{ activite.section.sous_direction.couleur }}';
+
+function onAvancementChange(val) {
+  val = parseInt(val);
+  document.getElementById('avancement_val').textContent = val + '%';
+  // Suggestion automatique du statut selon l'avancement
+  var suggestion = val === 0 ? 'ouverte' : val < 100 ? 'en_cours' : 'en_cours';
+  // Mettre à jour visuellement (sans forcer, juste suggérer)
+  document.getElementById('avancement_val').style.color =
+    val < 31 ? '#dc3545' : val < 70 ? '#F5A623' : '#28a745';
+  // Si ouverte et on déplace le slider > 0 → suggérer en_cours
+  var currentStatut = document.querySelector('input[name="statut"]:checked');
+  if (currentStatut && currentStatut.value === 'ouverte' && val > 0) {
+    selectStatut('en_cours');
+  }
+}
+
+function selectStatut(val) {
+  var radio = document.querySelector('input[name="statut"][value="' + val + '"]');
+  if (radio) {
+    radio.checked = true;
+    radio.dispatchEvent(new Event('change'));
+  }
+}
+
+function onStatutChange(input) {
+  // Mettre à jour le style de tous les boutons
+  document.querySelectorAll('.statut-btn').forEach(function(btn) {
+    btn.style.borderColor   = '#e5e7eb';
+    btn.style.background    = '';
+    btn.style.fontWeight    = '500';
+  });
+  var label = input.closest('.statut-btn');
+  if (label) {
+    label.style.borderColor = couleurSD;
+    label.style.background  = couleurSD + '12';
+    label.style.fontWeight  = '600';
+  }
+}
+
+// Initialiser au chargement
+document.addEventListener('DOMContentLoaded', function() {
+  var checked = document.querySelector('input[name="statut"]:checked');
+  if (checked) onStatutChange(checked);
 });
 
 // ── Motif clôture — style radio sélectionné ──────────────────────────────────
