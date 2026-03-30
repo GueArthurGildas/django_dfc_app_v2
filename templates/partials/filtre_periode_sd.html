@@ -1,0 +1,47 @@
+<!-- ══ FILTRE PÉRIODE — Fiche SD ════════════════════════════════════════════ -->
+<div class="card mb-4" style="border:none;border-radius:.75rem;box-shadow:0 1px 6px rgba(0,0,0,.07)">
+  <div class="card-body py-2 px-3">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <span style="font-size:.8rem;font-weight:700;color:#374151;white-space:nowrap">
+        <i class="bi bi-calendar3 me-1" style="color:{{ sd.couleur }}"></i>Période d'analyse
+      </span>
+
+      <select name="annee" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+        <option value="">Toutes les années</option>
+        {% for an in annees_dispo %}
+        <option value="{{ an }}" {% if filtre_annee == an|stringformat:"s" %}selected{% endif %}>{{ an }}</option>
+        {% endfor %}
+      </select>
+
+      <div class="d-flex gap-1">
+        {% for code, label, _ in trimestres %}
+        <button type="submit" name="trimestre" value="{{ code }}"
+                class="btn btn-sm"
+                style="border-radius:.4rem;font-size:.78rem;font-weight:600;
+                {% if filtre_trimestre == code %}background:{{ sd.couleur }};color:{{ sd.couleur_texte }};border-color:{{ sd.couleur }};
+                {% else %}background:#fff;color:#374151;border:1px solid #e5e7eb;{% endif %}"
+                title="{{ label }}">
+          {{ code }}
+        </button>
+        {% endfor %}
+        {% if filtre_trimestre %}
+        <button type="submit" name="trimestre" value="" class="btn btn-sm"
+                style="border-radius:.4rem;font-size:.78rem;color:#6b7280;border:1px solid #e5e7eb;background:#fff">
+          <i class="bi bi-x"></i>
+        </button>
+        {% endif %}
+      </div>
+
+      {% if filtre_annee or filtre_trimestre %}
+      <span style="font-size:.75rem;font-weight:600;background:{{ sd.couleur }}12;color:{{ sd.couleur }};padding:.25rem .6rem;border-radius:.4rem">
+        {% if filtre_annee %}{{ filtre_annee }}{% endif %}{% if filtre_trimestre %} — {{ filtre_trimestre }}{% endif %}
+      </span>
+      <a href="?" style="font-size:.75rem;color:#9ca3af;text-decoration:none"><i class="bi bi-x-circle"></i> Réinitialiser</a>
+      {% endif %}
+
+      <span style="font-size:.73rem;color:#9ca3af;margin-left:auto">
+        <i class="bi bi-info-circle me-1"></i>Les statistiques ci-dessous reflètent la période sélectionnée
+      </span>
+    </form>
+  </div>
+</div>

@@ -1,4 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.utils import timezone
 from django.views import View
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, View
 from django.urls import reverse_lazy
@@ -36,6 +37,49 @@ class SousDirectionDetailView(LoginRequiredMixin, DetailView):
         ctx['comptes_disponibles']  = CompteComptable.objects.filter(actif=True).exclude(pk__in=comptes_associes_ids).order_by('type_compte','numero')
         # Dossiers de la SD pour remplacer les modules métier
         from apps.operations.models import Dossier
+        # Filtres période pour les stats de la fiche SD
+        from apps.operations.views import appliquer_filtre_periode, get_annees_disponibles, TRIMESTRES
+        annee     = self.request.GET.get('annee', str(timezone.now().year))
+        trimestre = self.request.GET.get('trimestre', '')
+        ctx['filtre_annee']     = annee
+        ctx['filtre_trimestre'] = trimestre
+        ctx['annees_dispo']     = get_annees_disponibles()
+        ctx['trimestres']       = TRIMESTRES
+
+        # Recalculer les stats avec les filtres période
+        from apps.operations.models import Activite
+        from django.utils import timezone as tz
+        today = tz.now().date()
+        qs_sd = Activite.objects.filter(section__sous_direction=sd, deleted_at__isnull=True)
+        qs_sd = appliquer_filtre_periode(qs_sd, annee, trimestre)
+        total_sd    = qs_sd.count()
+        cloturees   = qs_sd.filter(statut='cloturee').count()
+        en_retard   = qs_sd.filter(statut__in=['ouverte','en_cours'], date_butoir__lt=today).count()
+        en_attente  = qs_sd.filter(statut='en_attente').count()
+        ouvertes    = qs_sd.filter(statut__in=['ouverte','en_cours']).count()
+        en_delai_ok = max(0, ouvertes - en_retard)
+        taux_comp   = round(cloturees / total_sd * 100) if total_sd else 0
+
+        ctx['stats_periode'] = {
+            'total':                  total_sd,
+            'nb_activites_cloturees': cloturees,
+            'nb_activites_ouvertes':  ouvertes,
+            'nb_activites_en_retard': en_retard,
+            'nb_activites_en_attente':en_attente,
+            'taux_completion':        taux_comp,
+        }
+        ctx['chart_data_periode'] = {
+            'labels': ['Clôturées','En cours (délai)','En attente','En retard'],
+            'values': [cloturees, en_delai_ok, en_attente, en_retard],
+            'colors': ['#28a745', sd.couleur, '#F5A623', '#dc3545'],
+        }
+        ctx['chart_legende_periode'] = [
+            ('Clôturées',          cloturees,   '#28a745'),
+            ('En cours / Ouvertes',en_delai_ok, sd.couleur),
+            ('En attente',         en_attente,  '#F5A623'),
+            ('En retard',          en_retard,   '#dc3545'),
+        ]
+
         ctx['dossiers_sd'] = Dossier.objects.filter(
             section__sous_direction=sd, est_actif=True
         ).select_related('section').order_by('section__code', 'titre')

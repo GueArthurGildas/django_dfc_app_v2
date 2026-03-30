@@ -4,7 +4,7 @@ from django.views import View
 from django.shortcuts import render
 from django.utils import timezone
 from apps.organisation.models import SousDirection
-from apps.operations.views import get_qs_activites, calcul_stats_qs, get_user_sd, ROLES_GLOBAUX
+from apps.operations.views import get_qs_activites, calcul_stats_qs, get_user_sd, ROLES_GLOBAUX, appliquer_filtre_periode, get_annees_disponibles, TRIMESTRES
 
 
 def get_mes_activites(user):
@@ -38,7 +38,9 @@ class DashboardView(LoginRequiredMixin, View):
         today    = timezone.now().date()
         user     = request.user
         role     = user.role.code if user.role else ''
-        sd_id    = request.GET.get('sd', 'all')
+        sd_id     = request.GET.get('sd', 'all')
+        annee     = request.GET.get('annee', '')
+        trimestre = request.GET.get('trimestre', '')
         user_sd  = get_user_sd(user)  # None si accès global
 
         # ── Sous-directions visibles ─────────────────────────────────────────
@@ -52,6 +54,7 @@ class DashboardView(LoginRequiredMixin, View):
 
         # ── Filtre SD supplémentaire (pour admin/DFC/DA) ─────────────────────
         qs_global = get_qs_activites(user)
+        qs_global = appliquer_filtre_periode(qs_global, annee, trimestre)
         if sd_id and sd_id != 'all':
             try:
                 qs_global = qs_global.filter(section__sous_direction_id=int(sd_id))
@@ -72,7 +75,7 @@ class DashboardView(LoginRequiredMixin, View):
         # ── Stats par SD (uniquement les SD visibles) ─────────────────────────
         stats_par_sd = []
         for sd in sous_directions:
-            qs_sd = get_qs_activites(user).filter(section__sous_direction=sd)
+            qs_sd = appliquer_filtre_periode(get_qs_activites(user).filter(section__sous_direction=sd), annee, trimestre)
             s     = calcul_stats_qs(qs_sd)
             stats_par_sd.append({
                 'id':      sd.pk,
@@ -91,6 +94,10 @@ class DashboardView(LoginRequiredMixin, View):
             'sd_cards':           stats_par_sd,
             'activites_urgentes': activites_urgentes,
             'mes_activites':      mes_activites,
+            'filtre_annee':       annee,
+            'filtre_trimestre':   trimestre,
+            'annees_dispo':       get_annees_disponibles(),
+            'trimestres':         TRIMESTRES,
             'today':              today,
         }
         return render(request, self.template_name, context)

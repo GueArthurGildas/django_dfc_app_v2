@@ -84,6 +84,8 @@
   </div>
 </div>
 
+{% include "partials/filtre_periode.html" %}
+
 <!-- Filtres -->
 <div class="card mb-3" style="border:none;border-radius:.75rem;box-shadow:0 1px 6px rgba(0,0,0,.06)">
   <div class="card-body py-2 px-3">
@@ -106,19 +108,6 @@
         {% endfor %}
       </select>
 
-      <select name="annee" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
-        <option value="">Toutes les années</option>
-        {% for an in annees_dispo %}
-        <option value="{{ an }}" {% if filtre_annee == an|stringformat:"s" %}selected{% endif %}>{{ an }}</option>
-        {% endfor %}
-      </select>
-
-      <select name="mois" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
-        <option value="">Tous les mois</option>
-        {% for num, nom in mois_list %}
-        <option value="{{ num }}" {% if filtre_mois == num|stringformat:"s" %}selected{% endif %}>{{ nom }}</option>
-        {% endfor %}
-      </select>
 
       {% if filtre_statut or filtre_sd or filtre_annee or filtre_mois or filtre_assignee %}
       <a href="{% url 'operations:activite_list' %}{% if filtre_q %}?q={{ filtre_q }}{% endif %}"

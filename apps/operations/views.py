@@ -14,6 +14,48 @@ from .services import ActiviteService
 from apps.organisation.models import SousDirection, Section
 
 
+
+# ── Filtres temporels (arrêtés comptables) ───────────────────────────────────
+TRIMESTRES = [
+    ('T1', 'T1 — Jan/Fév/Mar', [1, 2, 3]),
+    ('T2', 'T2 — Avr/Mai/Jun', [4, 5, 6]),
+    ('T3', 'T3 — Jul/Aoû/Sep', [7, 8, 9]),
+    ('T4', 'T4 — Oct/Nov/Déc', [10, 11, 12]),
+]
+
+def get_annees_disponibles():
+    """Années disponibles dans la base opérations."""
+    from django.db.models.functions import ExtractYear
+    from apps.operations.models import Activite
+    return list(
+        Activite.objects.annotate(annee=ExtractYear('date_ouverture'))
+        .values_list('annee', flat=True).distinct().order_by('-annee')
+    )
+
+def appliquer_filtre_periode(qs, annee, trimestre):
+    """Filtre un queryset Activite par année et/ou trimestre d'ouverture."""
+    if annee:
+        try:
+            qs = qs.filter(date_ouverture__year=int(annee))
+        except (ValueError, TypeError):
+            pass
+    if trimestre:
+        mois = next((t[2] for t in TRIMESTRES if t[0] == trimestre), None)
+        if mois:
+            qs = qs.filter(date_ouverture__month__in=mois)
+    return qs
+
+def contexte_periode(request):
+    """Retourne les variables de contexte liées aux filtres de période."""
+    from django.utils import timezone
+    annee_courante = timezone.now().year
+    return {
+        'filtre_annee':     request.GET.get('annee', str(annee_courante)),
+        'filtre_trimestre': request.GET.get('trimestre', ''),
+        'annees_dispo':     get_annees_disponibles(),
+        'trimestres':       TRIMESTRES,
+    }
+
 # ── Rôles avec accès global ───────────────────────────────────────────────────
 ROLES_GLOBAUX  = ('admin', 'dfc', 'da')
 ROLES_CREATION = ('admin', 'dfc', 'da', 'sd')
@@ -188,7 +230,8 @@ class ActiviteListView(LoginRequiredMixin, ListView):
         assignee = self.request.GET.get('assignee')
         annee    = self.request.GET.get('annee')
         mois     = self.request.GET.get('mois')
-        q = self.request.GET.get('q', '').strip()
+        q         = self.request.GET.get('q', '').strip()
+        trimestre = self.request.GET.get('trimestre', '')
         if q:
             qs = qs.filter(
                 Q(titre__icontains=q) |
@@ -203,10 +246,8 @@ class ActiviteListView(LoginRequiredMixin, ListView):
             qs = qs.filter(section__sous_direction_id=sd_id)
         if assignee == 'me':
             qs = qs.filter(acteurs__utilisateur=self.request.user).distinct()
-        if annee:
-            qs = qs.filter(date_ouverture__year=annee)
-        if mois:
-            qs = qs.filter(date_ouverture__month=mois)
+        # Filtres période
+        qs = appliquer_filtre_periode(qs, annee, trimestre)
         return qs.order_by('date_butoir')
 
     def get_context_data(self, **kwargs):
@@ -227,6 +268,8 @@ class ActiviteListView(LoginRequiredMixin, ListView):
         ctx['filtre_assignee'] = assignee
         ctx['filtre_annee']    = self.request.GET.get('annee', '')
         ctx['filtre_q']        = self.request.GET.get('q', '')
+        ctx['filtre_trimestre'] = self.request.GET.get('trimestre', '')
+        ctx['trimestres']       = TRIMESTRES
         ctx['filtre_mois']     = self.request.GET.get('mois', '')
         ctx['today']           = timezone.now().date()
         # Années disponibles pour le filtre
@@ -449,10 +492,13 @@ class ActiviteKanbanView(LoginRequiredMixin, View):
     template_name = 'operations/activite/kanban.html'
 
     def get(self, request):
-        qs    = get_qs_activites(request.user).filter(deleted_at__isnull=True)
-        sd_id = request.GET.get('sd')
+        qs        = get_qs_activites(request.user).filter(deleted_at__isnull=True)
+        sd_id     = request.GET.get('sd')
+        annee     = request.GET.get('annee', '')
+        trimestre = request.GET.get('trimestre', '')
         if sd_id:
             qs = qs.filter(section__sous_direction_id=sd_id)
+        qs = appliquer_filtre_periode(qs, annee, trimestre)
         kanban_cols = [
             {'statut':'ouverte',    'label':'Ouverte',    'color':'#003F7F', 'activites': list(qs.filter(statut='ouverte').order_by('date_butoir').select_related('section__sous_direction'))},
             {'statut':'en_cours',   'label':'En cours',   'color':'#F5A623', 'activites': list(qs.filter(statut='en_cours').order_by('date_butoir').select_related('section__sous_direction'))},
@@ -463,6 +509,10 @@ class ActiviteKanbanView(LoginRequiredMixin, View):
             'kanban_cols':     kanban_cols,
             'sous_directions': SousDirection.objects.filter(actif=True),
             'filtre_sd':       sd_id or '',
+            'filtre_annee':    annee,
+            'filtre_trimestre':trimestre,
+            'annees_dispo':    get_annees_disponibles(),
+            'trimestres':      TRIMESTRES,
             'today':           timezone.now().date(),
         })
 

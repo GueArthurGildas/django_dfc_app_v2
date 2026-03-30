@@ -1,0 +1,57 @@
+<!-- ══ FILTRE PÉRIODE ═══════════════════════════════════════════════════════ -->
+<div class="card mb-3" style="border:none;border-radius:.75rem;box-shadow:0 1px 6px rgba(0,0,0,.07)">
+  <div class="card-body py-2 px-3">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap" id="form-periode">
+      <!-- Conserver les autres filtres actifs -->
+      {% if filtre_statut %}<input type="hidden" name="statut" value="{{ filtre_statut }}">{% endif %}
+      {% if filtre_sd %}<input type="hidden" name="sd" value="{{ filtre_sd }}">{% endif %}
+      {% if filtre_q %}<input type="hidden" name="q" value="{{ filtre_q }}">{% endif %}
+      {% if filtre_assignee %}<input type="hidden" name="assignee" value="{{ filtre_assignee }}">{% endif %}
+
+      <span style="font-size:.8rem;font-weight:700;color:#374151;white-space:nowrap">
+        <i class="bi bi-calendar3 me-1" style="color:#003F7F"></i>Exercice comptable
+      </span>
+
+      <!-- Année -->
+      <select name="annee" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+        <option value="">Toutes les années</option>
+        {% for an in annees_dispo %}
+        <option value="{{ an }}" {% if filtre_annee == an|stringformat:"s" %}selected{% endif %}>{{ an }}</option>
+        {% endfor %}
+      </select>
+
+      <!-- Trimestre -->
+      <div class="d-flex gap-1">
+        {% for code, label, _ in trimestres %}
+        <button type="submit" name="trimestre" value="{{ code }}"
+                class="btn btn-sm"
+                style="border-radius:.4rem;font-size:.78rem;font-weight:600;
+                {% if filtre_trimestre == code %}background:#003F7F;color:#fff;border-color:#003F7F;
+                {% else %}background:#fff;color:#374151;border:1px solid #e5e7eb;{% endif %}">
+          {{ code }}
+        </button>
+        {% endfor %}
+        {% if filtre_trimestre %}
+        <button type="submit" name="trimestre" value=""
+                class="btn btn-sm" style="border-radius:.4rem;font-size:.78rem;color:#6b7280;border:1px solid #e5e7eb;background:#fff"
+                title="Voir tous les trimestres">
+          <i class="bi bi-x"></i>
+        </button>
+        {% endif %}
+      </div>
+
+      <!-- Badge période active -->
+      {% if filtre_annee or filtre_trimestre %}
+      <span style="font-size:.75rem;font-weight:600;background:#003F7F12;color:#003F7F;padding:.25rem .6rem;border-radius:.4rem">
+        {% if filtre_annee %}{{ filtre_annee }}{% endif %}
+        {% if filtre_trimestre %} — {{ filtre_trimestre }}{% endif %}
+      </span>
+      {% if filtre_annee %}
+      <a href="?" style="font-size:.75rem;color:#9ca3af;text-decoration:none" title="Réinitialiser la période">
+        <i class="bi bi-x-circle"></i> Réinitialiser
+      </a>
+      {% endif %}
+      {% endif %}
+    </form>
+  </div>
+</div>
