@@ -111,11 +111,93 @@
     {{ request.user.get_section }}
   </span>
 
+  <!-- Bouton IA ARIA -->
+  <button onclick="ariaToggle()" id="btn-aria"
+          class="btn btn-sm d-flex align-items-center gap-2"
+          style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:.6rem;padding:.35rem .85rem;box-shadow:0 2px 8px rgba(99,102,241,.35);transition:all .2s"
+          title="Assistant IA ARIA">
+    <span style="position:relative;display:flex">
+      <i class="bi bi-stars" style="font-size:1rem"></i>
+    </span>
+    <span style="font-size:.8rem;font-weight:600;letter-spacing:.01em">ARIA</span>
+  </button>
+
   <!-- Notifications -->
-  <a href="#" class="btn btn-sm btn-light position-relative">
-    <i class="bi bi-bell"></i>
-    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill badge-notif">0</span>
-  </a>
+  <div class="dropdown">
+    <button class="btn btn-sm btn-light position-relative" data-bs-toggle="dropdown" aria-expanded="false" id="btn-alertes">
+      <i class="bi bi-bell{% if nb_alertes %}-fill{% endif %}"
+         style="{% if nb_alertes %}color:#F5A623{% endif %}"></i>
+      {% if nb_alertes %}
+      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill badge-notif"
+            style="background:#dc2626;color:#fff;font-size:.65rem;min-width:18px;height:18px;display:flex;align-items:center;justify-content:center;padding:0 4px">
+        {{ nb_alertes }}
+      </span>
+      {% endif %}
+    </button>
+
+    <!-- Dropdown alertes -->
+    <div class="dropdown-menu dropdown-menu-end shadow" style="min-width:340px;border-radius:.75rem;border:none;padding:.5rem 0;max-height:420px;overflow-y:auto">
+      <div class="px-3 py-2" style="border-bottom:1px solid #f0f0f0">
+        <div style="font-size:.82rem;font-weight:700;color:#1a1a2e">
+          <i class="bi bi-bell-fill me-2" style="color:#F5A623"></i>
+          Alertes activités
+          {% if nb_alertes %}<span class="badge ms-1" style="background:#dc2626;font-size:.65rem">{{ nb_alertes }}</span>{% endif %}
+        </div>
+      </div>
+
+      {% if alertes %}
+        {% for alerte in alertes %}
+        <a href="{% url 'operations:activite_detail' alerte.activite.pk %}"
+           class="dropdown-item px-3 py-2 d-flex align-items-start gap-2"
+           style="border-bottom:1px solid #f8f8f8;transition:background .15s">
+          <!-- Icône type -->
+          <div style="flex-shrink:0;margin-top:.15rem">
+            {% if alerte.type == 'retard' %}
+            <div style="width:32px;height:32px;border-radius:.5rem;background:#fee2e2;display:flex;align-items:center;justify-content:center">
+              <i class="bi bi-exclamation-triangle-fill" style="color:#dc2626;font-size:.8rem"></i>
+            </div>
+            {% else %}
+            <div style="width:32px;height:32px;border-radius:.5rem;background:#fef3c7;display:flex;align-items:center;justify-content:center">
+              <i class="bi bi-clock-fill" style="color:#d97706;font-size:.8rem"></i>
+            </div>
+            {% endif %}
+          </div>
+          <!-- Infos -->
+          <div class="flex-grow-1 min-w-0">
+            <div style="font-size:.82rem;font-weight:600;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              {{ alerte.activite.titre|truncatechars:35 }}
+            </div>
+            <div class="d-flex align-items-center gap-2 mt-1">
+              <span style="font-size:.68rem;font-weight:600;background:{{ alerte.activite.section.sous_direction.couleur }}18;color:{{ alerte.activite.section.sous_direction.couleur }};padding:.1rem .4rem;border-radius:.3rem">
+                {{ alerte.activite.section.sous_direction.code }}
+              </span>
+              {% if alerte.type == 'retard' %}
+              <span style="font-size:.72rem;color:#dc2626;font-weight:600">
+                {{ alerte.jours }}j de retard
+              </span>
+              {% else %}
+              <span style="font-size:.72rem;color:#d97706;font-weight:600">
+                Échéance dans {{ alerte.jours }}j
+              </span>
+              {% endif %}
+            </div>
+          </div>
+        </a>
+        {% endfor %}
+        <div class="px-3 py-2 text-center">
+          <a href="{% url 'operations:activite_list' %}?statut=en_cours"
+             style="font-size:.78rem;color:#003F7F;text-decoration:none;font-weight:600">
+            Voir toutes les activités <i class="bi bi-arrow-right ms-1"></i>
+          </a>
+        </div>
+      {% else %}
+        <div class="text-center py-4" style="color:#9ca3af;font-size:.83rem">
+          <i class="bi bi-check-circle display-6 d-block mb-2" style="color:#28a745;opacity:.6"></i>
+          Aucune alerte — tout est dans les délais !
+        </div>
+      {% endif %}
+    </div>
+  </div>
 
   <!-- Profil -->
   <div class="dropdown">
@@ -149,6 +231,262 @@
 
 </main>
 
+
+
+
+
+<!-- ══ PANEL IA ARIA ═══════════════════════════════════════════════════════ -->
+<div id="ia-panel" style="position:fixed;top:0;right:0;bottom:0;width:420px;background:#fff;
+     box-shadow:-4px 0 40px rgba(0,0,0,.18);z-index:9998;display:flex;flex-direction:column;
+     transform:translateX(100%);transition:transform .35s cubic-bezier(.16,1,.3,1)">
+
+  <!-- Header gradient -->
+  <div style="padding:1rem 1.25rem;background:linear-gradient(135deg,#6366f1,#8b5cf6);
+              display:flex;align-items:center;gap:.75rem;flex-shrink:0">
+    <div style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.18);
+                display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <i class="bi bi-stars" style="color:#fff;font-size:1.15rem"></i>
+    </div>
+    <div style="flex-grow:1;min-width:0">
+      <div style="color:#fff;font-weight:800;font-size:.95rem;letter-spacing:.01em">ARIA</div>
+      <div style="color:rgba(255,255,255,.72);font-size:.7rem">Assistante DFC · Comptabilité &amp; Finance · CIE</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:.6rem">
+      <div id="aria-dot" style="width:8px;height:8px;border-radius:50%;background:#4ade80;
+           box-shadow:0 0 8px #4ade80;transition:background .3s"></div>
+      <button onclick="ariaToggle()" style="background:rgba(255,255,255,.15);border:none;
+              color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.1rem;
+              display:flex;align-items:center;justify-content:center;line-height:1">&times;</button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div id="aria-msgs" style="flex:1;overflow-y:auto;padding:1rem;
+       display:flex;flex-direction:column;gap:.8rem;background:#f8fafc">
+    <!-- Message d'accueil -->
+    <div style="display:flex;gap:.5rem;align-items:flex-start">
+      <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);
+                  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.1rem">
+        <i class="bi bi-stars" style="color:#fff;font-size:.65rem"></i>
+      </div>
+      <div style="background:#fff;border-radius:.25rem .75rem .75rem .75rem;padding:.75rem .95rem;
+                  max-width:88%;box-shadow:0 1px 4px rgba(0,0,0,.07);font-size:.84rem;
+                  line-height:1.65;color:#374151">
+        Bonjour ! Je suis <strong>ARIA</strong>, votre assistante DFC/CIE. ✨<br><br>
+        Je peux vous accompagner sur :<br>
+        <span class="aria-link" onclick="ariaSend(this.textContent)">📊 Comment lire une Balance Générale ?</span><br>
+        <span class="aria-link" onclick="ariaSend(this.textContent)">📖 Expliquer le lettrage comptable SYSCOHADA</span><br>
+        <span class="aria-link" onclick="ariaSend(this.textContent)">🧘 Gérer le stress en période d'arrêté comptable</span><br>
+        <span class="aria-link" onclick="ariaSend(this.textContent)">💰 Analyser une situation de trésorerie</span><br><br>
+        <em style="color:#9ca3af">Que souhaitez-vous explorer aujourd'hui ?</em>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chips suggestions -->
+  <div id="aria-chips" style="padding:.6rem 1rem;background:#f8fafc;
+       border-top:1px solid #f0f0f0;display:flex;gap:.4rem;flex-wrap:wrap">
+    {% for s in ia_suggestions %}
+    <button onclick="ariaSend('{{ s }}')" style="font-size:.7rem;background:#fff;border:1px solid #e5e7eb;
+            color:#6b7280;padding:.2rem .55rem;border-radius:99px;cursor:pointer;
+            transition:all .15s;white-space:nowrap"
+            onmouseover="this.style.background='#eef2ff';this.style.borderColor='#6366f1';this.style.color='#6366f1'"
+            onmouseout="this.style.background='#fff';this.style.borderColor='#e5e7eb';this.style.color='#6b7280'">
+      {{ s }}
+    </button>
+    {% endfor %}
+  </div>
+
+  <!-- Zone de saisie -->
+  <div style="padding:.75rem 1rem 1rem;background:#fff;border-top:1px solid #f0f0f0;flex-shrink:0">
+    <div style="display:flex;gap:.5rem;align-items:flex-end">
+      <textarea id="aria-input" rows="1"
+                placeholder="Posez votre question à ARIA... (Entrée pour envoyer)"
+                style="flex:1;border:1.5px solid #e5e7eb;border-radius:.75rem;padding:.55rem .85rem;
+                       font-size:.84rem;resize:none;outline:none;max-height:120px;overflow-y:auto;
+                       line-height:1.5;transition:border-color .15s;font-family:inherit"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();ariaEnvoyer()}"
+                oninput="ariaResize(this)"
+                onfocus="this.style.borderColor='#6366f1'"
+                onblur="this.style.borderColor='#e5e7eb'"></textarea>
+      <button onclick="ariaEnvoyer()" id="aria-btn"
+              style="width:38px;height:38px;border-radius:50%;
+                     background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;
+                     color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;
+                     flex-shrink:0;transition:opacity .2s;box-shadow:0 2px 10px rgba(99,102,241,.4)">
+        <i class="bi bi-send-fill" style="font-size:.8rem;margin-left:1px"></i>
+      </button>
+    </div>
+    <div style="font-size:.67rem;color:#c4c4c4;margin-top:.4rem;text-align:center">
+      Ollama local · gemma2:9b · Session non sauvegardée
+    </div>
+  </div>
+</div>
+
+<!-- Overlay -->
+<div id="aria-overlay" onclick="ariaToggle()"
+     style="display:none;position:fixed;inset:0;z-index:9997;
+            background:rgba(0,0,0,.12);backdrop-filter:blur(1px)"></div>
+
+<style>
+#ia-panel.aria-open { transform:translateX(0) !important; }
+.aria-link {
+  display:inline-block;margin:.15rem 0;cursor:pointer;color:#6366f1;
+  text-decoration:underline;text-decoration-style:dotted;
+}
+.aria-link:hover { color:#4338ca; }
+#aria-msgs::-webkit-scrollbar { width:4px; }
+#aria-msgs::-webkit-scrollbar-thumb { background:#e5e7eb;border-radius:2px; }
+@keyframes ariaPulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+.aria-dot-anim { display:inline-flex;gap:3px;align-items:center;padding:.2rem 0 }
+.aria-dot-anim span {
+  display:inline-block;width:6px;height:6px;border-radius:50%;background:#6366f1;
+  animation:ariaPulse .9s infinite;
+}
+.aria-dot-anim span:nth-child(2) { animation-delay:.2s; }
+.aria-dot-anim span:nth-child(3) { animation-delay:.4s; }
+</style>
+
+<script>
+const ARIA_URL  = "{% url 'dashboard:ia_chat' %}";
+const ARIA_CSRF = "{{ csrf_token }}";
+let   ariaHist  = [];
+let   ariaBusy  = false;
+
+function ariaToggle() {
+  const panel   = document.getElementById('ia-panel');
+  const overlay = document.getElementById('aria-overlay');
+  const open    = panel.classList.contains('aria-open');
+  if (open) {
+    panel.classList.remove('aria-open');
+    overlay.style.display = 'none';
+  } else {
+    panel.classList.add('aria-open');
+    overlay.style.display = 'block';
+    setTimeout(() => document.getElementById('aria-input').focus(), 350);
+  }
+}
+
+function ariaResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function ariaBubble(role, contenu, streaming) {
+  const msgs  = document.getElementById('aria-msgs');
+  const isAI  = role === 'assistant';
+  const wrap  = document.createElement('div');
+  wrap.style.cssText = 'display:flex;gap:.5rem;align-items:flex-start;' + (isAI ? '' : 'flex-direction:row-reverse');
+
+  const av = document.createElement('div');
+  av.style.cssText = 'width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.1rem;font-size:.72rem;font-weight:700';
+  if (isAI) {
+    av.style.background = 'linear-gradient(135deg,#6366f1,#8b5cf6)';
+    av.innerHTML = '<i class="bi bi-stars" style="color:#fff;font-size:.65rem"></i>';
+  } else {
+    av.style.cssText += ';background:#e0e7ff;color:#4338ca';
+    av.textContent = '{{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}';
+  }
+
+  const bbl = document.createElement('div');
+  bbl.style.cssText = 'border-radius:.25rem .75rem .75rem .75rem;padding:.65rem .9rem;max-width:88%;font-size:.84rem;line-height:1.65;';
+  if (isAI) {
+    bbl.style.cssText += 'background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.07);color:#374151';
+  } else {
+    bbl.style.cssText += 'background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-radius:.75rem .25rem .75rem .75rem';
+  }
+  bbl.innerHTML = streaming
+    ? '<div class="aria-dot-anim"><span></span><span></span><span></span></div>'
+    : ariaFmt(contenu);
+  if (streaming) bbl.id = 'aria-stream-bbl';
+
+  wrap.appendChild(av);
+  wrap.appendChild(bbl);
+  msgs.appendChild(wrap);
+  msgs.scrollTop = msgs.scrollHeight;
+  return bbl;
+}
+
+function ariaFmt(t) {
+  if (!t) return '';
+  return t
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code style="background:#f3f4f6;padding:.1rem .3rem;border-radius:.25rem;font-size:.8rem;font-family:monospace">$1</code>')
+    .replace(/^### (.+)$/gm, '<div style="font-weight:700;font-size:.9rem;margin:.6rem 0 .2rem;color:#1a1a2e">$1</div>')
+    .replace(/^## (.+)$/gm, '<div style="font-weight:800;font-size:.95rem;margin:.7rem 0 .3rem;color:#1a1a2e">$1</div>')
+    .replace(/^- (.+)$/gm, '<div style="display:flex;gap:.4rem;margin:.15rem 0"><span style="color:#6366f1;flex-shrink:0">•</span><span>$1</span></div>')
+    .replace(/\n\n/g, '<div style="height:.5rem"></div>')
+    .replace(/\n/g, '<br>');
+}
+
+async function ariaEnvoyer() {
+  if (ariaBusy) return;
+  const inp  = document.getElementById('aria-input');
+  const txt  = inp.value.trim();
+  if (!txt) return;
+
+  ariaBubble('user', txt, false);
+  ariaHist.push({ role: 'user', content: txt });
+  inp.value = '';
+  inp.style.height = 'auto';
+  document.getElementById('aria-chips').style.display = 'none';
+
+  ariaBusy = true;
+  document.getElementById('aria-btn').style.opacity = '.45';
+  document.getElementById('aria-dot').style.background = '#fbbf24';
+  document.getElementById('aria-dot').style.boxShadow = '0 0 8px #fbbf24';
+
+  const bbl = ariaBubble('assistant', '', true);
+  let full  = '';
+
+  try {
+    const res = await fetch(ARIA_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': ARIA_CSRF },
+      body: JSON.stringify({ messages: ariaHist })
+    });
+    const reader = res.body.getReader();
+    const dec    = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      for (const line of dec.decode(value).split('\n')) {
+        if (!line.startsWith('data: ')) continue;
+        const raw = line.slice(6).trim();
+        if (raw === '[DONE]') break;
+        try {
+          const chunk = JSON.parse(raw);
+          if (chunk.error) {
+            bbl.innerHTML = '<span style="color:#dc2626"><i class="bi bi-wifi-off me-1"></i>' + chunk.error + '</span>';
+            break;
+          }
+          if (chunk.content) {
+            full += chunk.content;
+            bbl.innerHTML = ariaFmt(full);
+            document.getElementById('aria-msgs').scrollTop = 999999;
+          }
+        } catch(e) {}
+      }
+    }
+  } catch(e) {
+    bbl.innerHTML = '<span style="color:#dc2626"><i class="bi bi-exclamation-triangle me-1"></i>Ollama inaccessible (localhost:11434). Vérifiez que le service est démarré.</span>';
+  }
+
+  if (full) ariaHist.push({ role: 'assistant', content: full });
+
+  ariaBusy = false;
+  document.getElementById('aria-btn').style.opacity = '1';
+  document.getElementById('aria-dot').style.background = '#4ade80';
+  document.getElementById('aria-dot').style.boxShadow = '0 0 8px #4ade80';
+}
+
+function ariaSend(txt) {
+  document.getElementById('aria-input').value = txt;
+  ariaEnvoyer();
+}
+</script>
 
 <!-- ══ MODAL ANNONCES ════════════════════════════════════════════════════════ -->
 {% if annonces_actives %}
