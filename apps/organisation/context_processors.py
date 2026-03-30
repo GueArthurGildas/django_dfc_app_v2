@@ -70,6 +70,14 @@ def annonces_context(request):
     # Filtrer celles déjà vues dans cette session
     vues = request.session.get('annonces_vues', [])
     annonces_nouvelles = [a for a in annonces if a.pk not in vues]
+
+    # Marquer immédiatement toutes les annonces à afficher comme vues
+    # pour éviter la réapparition si l'utilisateur ne clique pas sur Fermer
+    if annonces_nouvelles:
+        nouvelles_vues = vues + [a.pk for a in annonces_nouvelles]
+        request.session['annonces_vues'] = nouvelles_vues
+        request.session.modified = True
+
     return {
         'annonces_actives':    annonces_nouvelles,
         'nb_annonces_actives': len(annonces_nouvelles),

@@ -103,3 +103,16 @@ class Annonce(models.Model):
         from django.utils import timezone
         now = timezone.now()
         return cls.objects.filter(actif=True, date_debut__lte=now, date_fin__gte=now)
+
+class AnnonceVue(models.Model):
+    """Trace qu'un utilisateur a vu une annonce — stocké en base, fiable à 100%."""
+    annonce     = models.ForeignKey(Annonce, on_delete=models.CASCADE, related_name='vues')
+    utilisateur = models.ForeignKey('Utilisateur', on_delete=models.CASCADE, related_name='annonces_vues')
+    vu_le       = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [('annonce', 'utilisateur')]
+        verbose_name = 'Annonce vue'
+
+    def __str__(self):
+        return f"{self.utilisateur} — {self.annonce.titre}"

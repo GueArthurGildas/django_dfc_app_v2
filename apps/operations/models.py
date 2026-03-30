@@ -138,6 +138,43 @@ class Activite(models.Model):
             return self.date_realisation <= self.date_butoir
         return None
 
+    # ── Permissions ───────────────────────────────────────────────────────────
+
+    def peut_modifier(self, user):
+        """SD/Chef/Cadre peuvent modifier SAUF si créée par un supérieur."""
+        if not user.role:
+            return False
+        role = user.role.code
+        if role in ('admin', 'dfc', 'da'):
+            return True
+        if role in ('sd', 'chef', 'cadre'):
+            createur = self.created_by
+            if createur and createur.role:
+                if createur.role.niveau < user.role.niveau:
+                    return False  # créé par un supérieur → lecture seule
+            return True
+        return False
+
+    def peut_gerer_acteurs(self, user):
+        return self.peut_modifier(user)
+
+    def peut_supprimer_doc(self, user):
+        return self.peut_modifier(user)
+
+    def peut_cloturer(self, user):
+        if not user.role:
+            return False
+        return user.role.code in ('admin', 'dfc', 'da', 'sd', 'chef', 'cadre')
+
+    def peut_suivre(self, user):
+        """Tout acteur de l'activité peut mettre à jour le suivi."""
+        if not user.role:
+            return False
+        if user.role.code in ('admin', 'dfc', 'da', 'sd', 'chef', 'cadre'):
+            return True
+        # Maîtrise/Visiteur : uniquement s'ils sont acteurs
+        return self.acteurs.filter(utilisateur=user).exists()
+
 
 class ActiviteActeur(models.Model):
     ROLES = [

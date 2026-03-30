@@ -307,6 +307,12 @@ class ActiviteDetailView(LoginRequiredMixin, DetailView):
         ctx['today']          = timezone.now().date()
         # Membres de la SD pour le sélecteur d'ajout d'acteur
         from apps.authentication.models import Utilisateur
+        # Permissions pour cet utilisateur sur cette activité
+        ctx['peut_modifier']      = a.peut_modifier(self.request.user)
+        ctx['peut_gerer_acteurs'] = a.peut_gerer_acteurs(self.request.user)
+        ctx['peut_supprimer_doc'] = a.peut_supprimer_doc(self.request.user)
+        ctx['peut_cloturer']      = a.peut_cloturer(self.request.user)
+        ctx['peut_suivre']        = a.peut_suivre(self.request.user)
         ctx['membres_sd'] = Utilisateur.objects.filter(
             sections_lien__section__sous_direction=a.section.sous_direction,
             est_actif_cie=True
@@ -411,6 +417,14 @@ class ActiviteUpdateView(LoginRequiredMixin, UpdateView):
     form_class = ActiviteForm
     template_name = 'operations/activite/form.html'
 
+    def dispatch(self, request, *args, **kwargs):
+        activite = self.get_object()
+        if not activite.peut_modifier(request.user):
+            from django.contrib import messages
+            messages.error(request, "Vous n'avez pas les droits pour modifier cette activité.")
+            return redirect('operations:activite_detail', pk=activite.pk)
+        return super().dispatch(request, *args, **kwargs)
+
     def get_success_url(self):
         return reverse('operations:activite_detail', kwargs={'pk': self.object.pk})
 
@@ -422,7 +436,10 @@ class ActiviteUpdateView(LoginRequiredMixin, UpdateView):
 
 class CommenterView(LoginRequiredMixin, View):
     def post(self, request, pk):
-        activite    = get_object_or_404(Activite, pk=pk)
+        activite = get_object_or_404(Activite, pk=pk)
+        if not activite.peut_suivre(request.user):
+            messages.error(request, "Vous n'êtes pas acteur de cette activité.")
+            return redirect('operations:activite_detail', pk=pk)
         contenu     = request.POST.get('contenu', '').strip()
         type_comment= request.POST.get('type_comment', 'mise_a_jour')
         avancement  = int(request.POST.get('avancement', activite.etat_avancement))
@@ -450,6 +467,9 @@ class CommenterView(LoginRequiredMixin, View):
 class CloreActiviteView(LoginRequiredMixin, View):
     def post(self, request, pk):
         activite = get_object_or_404(Activite, pk=pk)
+        if not activite.peut_cloturer(request.user):
+            messages.error(request, "Vous n'avez pas les droits pour clôturer cette activité.")
+            return redirect('operations:activite_detail', pk=pk)
         form = CloreForm(request.POST)
         if form.is_valid():
             d = form.cleaned_data
@@ -566,6 +586,10 @@ class ChangerStatutDocView(LoginRequiredMixin, View):
 
 class SupprimerDocView(LoginRequiredMixin, View):
     def post(self, request, pk, doc_pk):
+        activite = get_object_or_404(Activite, pk=pk)
+        if not activite.peut_supprimer_doc(request.user):
+            messages.error(request, "Vous n'avez pas les droits pour retirer un document.")
+            return redirect('operations:activite_detail', pk=pk)
         doc     = get_object_or_404(DocumentActivite, pk=doc_pk, activite_id=pk)
         libelle = doc.type_document.libelle
         doc.delete()
@@ -577,7 +601,10 @@ class SupprimerDocView(LoginRequiredMixin, View):
 
 class AjouterActeurView(LoginRequiredMixin, View):
     def post(self, request, pk):
-        activite    = get_object_or_404(Activite, pk=pk)
+        activite = get_object_or_404(Activite, pk=pk)
+        if not activite.peut_gerer_acteurs(request.user):
+            messages.error(request, "Vous n'avez pas les droits pour gérer les acteurs.")
+            return redirect('operations:activite_detail', pk=pk)
         user_id     = request.POST.get('user_id')
         role        = request.POST.get('role', 'acteur')
         recevoir_mail = request.POST.get('peut_recevoir_mail', 'true') == 'true'
@@ -599,6 +626,10 @@ class AjouterActeurView(LoginRequiredMixin, View):
 
 class RetirerActeurView(LoginRequiredMixin, View):
     def post(self, request, pk, acteur_pk):
+        activite = get_object_or_404(Activite, pk=pk)
+        if not activite.peut_gerer_acteurs(request.user):
+            messages.error(request, "Vous n'avez pas les droits pour gérer les acteurs.")
+            return redirect('operations:activite_detail', pk=pk)
         lien = get_object_or_404(ActiviteActeur, pk=acteur_pk, activite_id=pk)
         nom  = lien.utilisateur.nom_complet
         lien.delete()
@@ -608,6 +639,10 @@ class RetirerActeurView(LoginRequiredMixin, View):
 
 class ChangerRoleActeurView(LoginRequiredMixin, View):
     def post(self, request, pk, acteur_pk):
+        activite = get_object_or_404(Activite, pk=pk)
+        if not activite.peut_gerer_acteurs(request.user):
+            messages.error(request, "Vous n'avez pas les droits pour changer les rôles.")
+            return redirect('operations:activite_detail', pk=pk)
         lien = get_object_or_404(ActiviteActeur, pk=acteur_pk, activite_id=pk)
         role = request.POST.get('role', lien.role_activite)
         if role in ('responsable', 'acteur'):
