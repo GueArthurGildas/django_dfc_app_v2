@@ -39,3 +39,13 @@ class ProfilView(LoginRequiredMixin, View):
 
     def get(self, request):
         return render(request, self.template_name, {'user': request.user})
+
+
+class MarquerAnnonceVueView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        vues = request.session.get('annonces_vues', [])
+        if pk not in vues:
+            vues.append(pk)
+            request.session['annonces_vues'] = vues
+        from django.http import JsonResponse
+        return JsonResponse({'ok': True})

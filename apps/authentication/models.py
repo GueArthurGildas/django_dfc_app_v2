@@ -77,3 +77,29 @@ class Utilisateur(AbstractUser):
         if code == 'sd':
             return self.get_sous_direction() == sd
         return self.get_sous_direction() == sd
+
+
+class Annonce(models.Model):
+    """Message d'information affiché à tous les utilisateurs lors de la connexion."""
+    titre       = models.CharField(max_length=200)
+    description = models.TextField()
+    image       = models.ImageField(upload_to='annonces/', null=True, blank=True)
+    date_debut  = models.DateTimeField(help_text="Date de début d'affichage")
+    date_fin    = models.DateTimeField(help_text="Date de fin d'affichage")
+    actif       = models.BooleanField(default=True)
+    created_by  = models.ForeignKey('Utilisateur', on_delete=models.SET_NULL, null=True, related_name='annonces_creees')
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date_debut']
+        verbose_name = 'Annonce'
+        verbose_name_plural = 'Annonces'
+
+    def __str__(self):
+        return self.titre
+
+    @classmethod
+    def get_actives(cls):
+        from django.utils import timezone
+        now = timezone.now()
+        return cls.objects.filter(actif=True, date_debut__lte=now, date_fin__gte=now)

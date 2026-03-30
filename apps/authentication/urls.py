@@ -7,4 +7,5 @@ urlpatterns = [
     path('login/',  views.LoginView.as_view(),  name='login'),
     path('logout/', views.LogoutView.as_view(), name='logout'),
     path('profil/', views.ProfilView.as_view(), name='profil'),
+    path('annonce/<int:pk>/vue/', views.MarquerAnnonceVueView.as_view(), name='annonce_vue'),
 ]

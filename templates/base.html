@@ -149,6 +149,110 @@
 
 </main>
 
+
+<!-- ══ MODAL ANNONCES ════════════════════════════════════════════════════════ -->
+{% if annonces_actives %}
+<div id="modal-annonces" style="position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(10,10,30,.65);backdrop-filter:blur(4px)">
+  <div style="width:100%;max-width:560px;border-radius:1.25rem;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.4);animation:slideUp .4s cubic-bezier(.16,1,.3,1)">
+    {% for annonce in annonces_actives %}
+    <div class="annonce-slide {% if not forloop.first %}d-none{% endif %}" data-id="{{ annonce.pk }}" data-index="{{ forloop.counter0 }}" data-total="{{ annonces_actives|length }}">
+
+      <!-- Image si présente -->
+      {% if annonce.image %}
+      <div style="position:relative;height:200px;overflow:hidden">
+        <img src="{{ annonce.image.url }}" alt="{{ annonce.titre }}"
+             style="width:100%;height:100%;object-fit:cover">
+        <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.5))"></div>
+        <!-- Compteur slides -->
+        <div style="position:absolute;top:1rem;right:1rem;background:rgba(0,0,0,.4);color:#fff;font-size:.72rem;font-weight:600;padding:.2rem .6rem;border-radius:99px;backdrop-filter:blur(4px)">
+          {{ forloop.counter }} / {{ annonces_actives|length }}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Contenu -->
+      <div style="background:#fff;padding:1.75rem 2rem">
+        {% if not annonce.image %}
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <span style="font-size:.72rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em">Information</span>
+          <span style="font-size:.72rem;color:#9ca3af">{{ forloop.counter }} / {{ annonces_actives|length }}</span>
+        </div>
+        {% endif %}
+
+        <!-- Icône + Titre -->
+        <div class="d-flex align-items-start gap-3 mb-3">
+          <div style="width:44px;height:44px;border-radius:.75rem;background:#003F7F12;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <i class="bi bi-megaphone-fill" style="color:#003F7F;font-size:1.1rem"></i>
+          </div>
+          <div>
+            <h4 style="margin:0 0 .25rem;font-size:1.1rem;font-weight:800;color:#1a1a2e;letter-spacing:-.01em">{{ annonce.titre }}</h4>
+            <div style="font-size:.73rem;color:#9ca3af">
+              <i class="bi bi-calendar3 me-1"></i>
+              Jusqu'au {{ annonce.date_fin|date:"d/m/Y" }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div style="font-size:.88rem;color:#4b5563;line-height:1.7;margin-bottom:1.5rem;white-space:pre-line">{{ annonce.description }}</div>
+
+        <!-- Actions -->
+        <div class="d-flex gap-2 justify-content-end">
+          {% if forloop.counter < annonces_actives|length %}
+          <button onclick="nextAnnonce({{ forloop.counter0 }}, {{ annonce.pk }})"
+                  class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem;font-size:.82rem">
+            Suivant <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+          {% endif %}
+          <button onclick="fermerAnnonces({{ annonce.pk }})"
+                  class="btn btn-sm" style="background:#003F7F;color:#fff;border-radius:.5rem;font-size:.82rem;min-width:100px">
+            {% if forloop.last %}Compris <i class="bi bi-check-lg ms-1"></i>{% else %}Fermer{% endif %}
+          </button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<style>
+@keyframes slideUp {
+  from { opacity:0; transform:translateY(40px) scale(.96); }
+  to   { opacity:1; transform:translateY(0)    scale(1);   }
+}
+</style>
+
+<script>
+const ANNONCE_URL = "{% url 'authentication:annonce_vue' 0 %}".replace('/0/', '/');
+const CSRF_TOKEN  = "{{ csrf_token }}";
+
+function marquerVue(pk) {
+  fetch(ANNONCE_URL + pk + '/', {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/json'}
+  });
+}
+
+function nextAnnonce(index, pk) {
+  marquerVue(pk);
+  document.querySelectorAll('.annonce-slide').forEach(function(el) {
+    el.classList.add('d-none');
+  });
+  var next = document.querySelector('.annonce-slide[data-index="' + (index + 1) + '"]');
+  if (next) next.classList.remove('d-none');
+}
+
+function fermerAnnonces(pk) {
+  marquerVue(pk);
+  var modal = document.getElementById('modal-annonces');
+  modal.style.animation = 'none';
+  modal.style.opacity   = '0';
+  modal.style.transition = 'opacity .25s';
+  setTimeout(function() { modal.style.display = 'none'; }, 250);
+}
+</script>
+{% endif %}
+
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Chart.js -->

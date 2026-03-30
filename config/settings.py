@@ -52,6 +52,7 @@ TEMPLATES = [
         'OPTIONS': {
             'context_processors': [
                 'apps.organisation.context_processors.sidebar_context',
+                'apps.organisation.context_processors.annonces_context',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',

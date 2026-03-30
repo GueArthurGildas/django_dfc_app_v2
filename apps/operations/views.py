@@ -305,6 +305,14 @@ class ActiviteDetailView(LoginRequiredMixin, DetailView):
         ctx['documents']      = a.documents.select_related('type_document','mis_a_jour_par').order_by('type_document__categorie','type_document__ordre')
         ctx['types_documents'] = TypeDocument.objects.filter(actif=True).exclude(pk__in=a.documents.values('type_document_id')).order_by('categorie','ordre')
         ctx['today']          = timezone.now().date()
+        # Membres de la SD pour le sélecteur d'ajout d'acteur
+        from apps.authentication.models import Utilisateur
+        ctx['membres_sd'] = Utilisateur.objects.filter(
+            sections_lien__section__sous_direction=a.section.sous_direction,
+            est_actif_cie=True
+        ).select_related('role').exclude(
+            pk__in=a.acteurs.values('utilisateur_id')
+        ).order_by('role__niveau', 'last_name', 'first_name').distinct()
         bg, fg = a.get_statut_display_badge()
         ctx['statut_bg'], ctx['statut_fg'] = bg, fg
         return ctx
@@ -562,6 +570,49 @@ class SupprimerDocView(LoginRequiredMixin, View):
         libelle = doc.type_document.libelle
         doc.delete()
         messages.success(request, f"Document « {libelle} » retiré.")
+        return redirect('operations:activite_detail', pk=pk)
+
+
+# ── Gestion des acteurs ────────────────────────────────────────────────────────
+
+class AjouterActeurView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        activite    = get_object_or_404(Activite, pk=pk)
+        user_id     = request.POST.get('user_id')
+        role        = request.POST.get('role', 'acteur')
+        recevoir_mail = request.POST.get('peut_recevoir_mail', 'true') == 'true'
+        if user_id:
+            from apps.authentication.models import Utilisateur
+            user = get_object_or_404(Utilisateur, pk=user_id)
+            obj, created = ActiviteActeur.objects.get_or_create(
+                activite=activite, utilisateur=user,
+                defaults={'role_activite': role, 'peut_recevoir_mail': recevoir_mail}
+            )
+            if not created:
+                obj.role_activite = role
+                obj.peut_recevoir_mail = recevoir_mail
+                obj.save()
+            label = 'ajouté' if created else 'mis à jour'
+            messages.success(request, f"{user.nom_complet} {label} comme {role}.")
+        return redirect('operations:activite_detail', pk=pk)
+
+
+class RetirerActeurView(LoginRequiredMixin, View):
+    def post(self, request, pk, acteur_pk):
+        lien = get_object_or_404(ActiviteActeur, pk=acteur_pk, activite_id=pk)
+        nom  = lien.utilisateur.nom_complet
+        lien.delete()
+        messages.success(request, f"{nom} retiré de l'activité.")
+        return redirect('operations:activite_detail', pk=pk)
+
+
+class ChangerRoleActeurView(LoginRequiredMixin, View):
+    def post(self, request, pk, acteur_pk):
+        lien = get_object_or_404(ActiviteActeur, pk=acteur_pk, activite_id=pk)
+        role = request.POST.get('role', lien.role_activite)
+        if role in ('responsable', 'acteur'):
+            lien.role_activite = role
+            lien.save(update_fields=['role_activite'])
         return redirect('operations:activite_detail', pk=pk)
 
 

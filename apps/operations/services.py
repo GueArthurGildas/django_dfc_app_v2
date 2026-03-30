@@ -131,43 +131,62 @@ class ActiviteService:
 
     @staticmethod
     def cloner(activite: Activite) -> Activite:
-        """Clone une activité mensuelle pour le mois suivant"""
+        """Clone une activité mensuelle pour le mois suivant."""
         from datetime import date
         import calendar
         today = date.today()
-        # Nouveau mois
-        if today.month == 12:
-            new_month, new_year = 1, today.year + 1
+
+        # Calculer le mois suivant à partir du mois de référence de l'activité
+        # (pas forcément le mois courant)
+        ref = activite.mois_reference  # format YYYY-MM
+        try:
+            ref_year, ref_month = int(ref[:4]), int(ref[5:7])
+        except Exception:
+            ref_year, ref_month = today.year, today.month
+
+        if ref_month == 12:
+            new_month, new_year = 1, ref_year + 1
         else:
-            new_month, new_year = today.month + 1, today.year
+            new_month, new_year = ref_month + 1, ref_year
 
         mois_ref = f"{new_year}-{new_month:02d}"
+
         # Vérifier qu'il n'existe pas déjà
         if Activite.objects.filter(activite_parente=activite, mois_reference=mois_ref).exists():
             return None
 
-        last_day = calendar.monthrange(new_year, new_month)[1]
-        new_butoir = activite.date_butoir.replace(year=new_year, month=new_month,
-                                                   day=min(activite.date_butoir.day, last_day))
+        last_day   = calendar.monthrange(new_year, new_month)[1]
+        # Date butoir : même jour du mois suivant (ou dernier jour si dépassé)
+        new_day    = min(activite.date_butoir.day, last_day)
+        new_butoir = activite.date_butoir.replace(year=new_year, month=new_month, day=new_day)
+        # Date intermédiaire si elle existe
+        new_inter  = None
+        if activite.date_intermediaire:
+            inter_day  = min(activite.date_intermediaire.day, last_day)
+            new_inter  = activite.date_intermediaire.replace(year=new_year, month=new_month, day=inter_day)
+
         clone = Activite.objects.create(
-            titre           = activite.titre,
-            description     = activite.description,
-            type_activite   = activite.type_activite,
-            statut          = 'ouverte',
-            dossier         = activite.dossier,
-            section         = activite.section,
-            date_ouverture  = date(new_year, new_month, 1),
-            date_butoir     = new_butoir,
-            est_kpi         = activite.est_kpi,
-            est_arrete      = activite.est_arrete,
-            activite_parente= activite,
-            mois_reference  = mois_ref,
-            created_by      = activite.created_by,
+            titre            = activite.titre,
+            description      = activite.description,
+            type_activite    = activite.type_activite,
+            statut           = 'en_cours',  # directement en cours car déjà récurrent
+            dossier          = activite.dossier,
+            section          = activite.section,
+            date_ouverture   = date(new_year, new_month, 1),
+            date_butoir      = new_butoir,
+            date_intermediaire = new_inter,
+            etat_avancement  = 0,
+            est_kpi          = activite.est_kpi,
+            est_arrete       = activite.est_arrete,
+            activite_parente = activite,
+            mois_reference   = mois_ref,
+            created_by       = activite.created_by,
         )
-        # Copier les acteurs
+        # Copier les acteurs et responsables
         for acteur in activite.acteurs.all():
             ActiviteActeur.objects.create(
-                activite=clone, utilisateur=acteur.utilisateur,
+                activite=clone,
+                utilisateur=acteur.utilisateur,
                 role_activite=acteur.role_activite,
                 peut_recevoir_mail=acteur.peut_recevoir_mail
             )
@@ -175,6 +194,15 @@ class ActiviteService:
         from .models import ActivitePIP
         for ap in ActivitePIP.objects.filter(activite=activite):
             ActivitePIP.objects.create(activite=clone, pip=ap.pip)
+        # Copier les documents attendus
+        from .models import DocumentActivite
+        for doc in DocumentActivite.objects.filter(activite=activite):
+            DocumentActivite.objects.create(
+                activite=clone,
+                type_document=doc.type_document,
+                etat='non_commence',
+                date_prevue=new_butoir,
+            )
 
         AlerteMailService.envoyer_clonage(clone)
         return clone

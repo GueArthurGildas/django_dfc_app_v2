@@ -24,6 +24,10 @@ urlpatterns = [
     path('activites/<int:pk>/documents/ajouter/',         views.AjouterDocumentActiviteView.as_view(), name='document_ajouter'),
     path('activites/<int:pk>/documents/<int:doc_pk>/statut/', views.ChangerStatutDocView.as_view(), name='document_statut'),
     path('activites/<int:pk>/documents/<int:doc_pk>/supprimer/', views.SupprimerDocView.as_view(), name='document_supprimer'),
+    # Gestion acteurs
+    path('activites/<int:pk>/acteurs/ajouter/',         views.AjouterActeurView.as_view(),   name='activite_acteur_ajouter'),
+    path('activites/<int:pk>/acteurs/<int:acteur_pk>/retirer/', views.RetirerActeurView.as_view(), name='activite_acteur_retirer'),
+    path('activites/<int:pk>/acteurs/<int:acteur_pk>/role/',    views.ChangerRoleActeurView.as_view(), name='activite_acteur_role'),
     # API JSON pour dashboard
     path('api/stats/',                       views.StatsAPIView.as_view(),       name='api_stats'),
 ]
