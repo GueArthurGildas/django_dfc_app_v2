@@ -147,7 +147,7 @@
 
       {% if alertes %}
         {% for alerte in alertes %}
-        <a href="{% url 'operations:activite_detail' alerte.activite.pk %}"
+        <a href="{% if alerte.activite.pk %}{% url 'operations:activite_detail' alerte.activite.pk %}{% else %}#{% endif %}"
            class="dropdown-item px-3 py-2 d-flex align-items-start gap-2"
            style="border-bottom:1px solid #f8f8f8;transition:background .15s">
           <!-- Icône type -->
@@ -420,6 +420,16 @@ function ariaFmt(t) {
     .replace(/\n/g, '<br>');
 }
 
+function ariaErreur(msg) {
+  return '<div style="background:#fee2e2;border-left:3px solid #dc2626;padding:.6rem .8rem;border-radius:.4rem;font-size:.83rem;color:#991b1b">'
+    + '<i class="bi bi-exclamation-triangle-fill me-2"></i>'
+    + '<strong>ARIA indisponible</strong><br>'
+    + '<span style="font-size:.78rem;color:#7f1d1d">' + msg + '</span>'
+    + '<br><span style="font-size:.73rem;color:#9ca3af;margin-top:.3rem;display:block">'
+    + 'Lancez : <code style="background:#f3f4f6;padding:.1rem .3rem;border-radius:.2rem">ollama serve</code> dans un terminal, puis réessayez.'
+    + '</span></div>';
+}
+
 async function ariaEnvoyer() {
   if (ariaBusy) return;
   const inp  = document.getElementById('aria-input');
@@ -446,6 +456,19 @@ async function ariaEnvoyer() {
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': ARIA_CSRF },
       body: JSON.stringify({ messages: ariaHist })
     });
+
+    // ── Cas 1 : Ollama non démarré → réponse JSON 503 ─────────────────────
+    if (!res.ok) {
+      const data = await res.json();
+      bbl.innerHTML = ariaErreur(data.error || 'Erreur serveur (' + res.status + ')');
+      ariaBusy = false;
+      document.getElementById('aria-btn').style.opacity = '1';
+      document.getElementById('aria-dot').style.background = '#f87171';
+      document.getElementById('aria-dot').style.boxShadow = '0 0 8px #f87171';
+      return;
+    }
+
+    // ── Cas 2 : Stream SSE Ollama ──────────────────────────────────────────
     const reader = res.body.getReader();
     const dec    = new TextDecoder();
 
@@ -459,7 +482,7 @@ async function ariaEnvoyer() {
         try {
           const chunk = JSON.parse(raw);
           if (chunk.error) {
-            bbl.innerHTML = '<span style="color:#dc2626"><i class="bi bi-wifi-off me-1"></i>' + chunk.error + '</span>';
+            bbl.innerHTML = ariaErreur(chunk.error);
             break;
           }
           if (chunk.content) {
@@ -471,7 +494,7 @@ async function ariaEnvoyer() {
       }
     }
   } catch(e) {
-    bbl.innerHTML = '<span style="color:#dc2626"><i class="bi bi-exclamation-triangle me-1"></i>Ollama inaccessible (localhost:11434). Vérifiez que le service est démarré.</span>';
+    bbl.innerHTML = ariaErreur('Impossible de joindre le serveur. Vérifiez votre connexion réseau.');
   }
 
   if (full) ariaHist.push({ role: 'assistant', content: full });

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load bg_extras %}
+{% block title %}Comptes — {{ bg }}{% endblock %}
+{% block page_title %}Comptes Balance Générale{% endblock %}
+{% block content %}
+<div class="mb-3 d-flex align-items-center justify-content-between">
+  <a href="{% url 'bg:detail' bg.pk %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem">
+    <i class="bi bi-arrow-left me-1"></i>Retour au détail
+  </a>
+  <h5 style="margin:0;font-size:.95rem;font-weight:700;color:#1a1a2e">{{ bg.label_periode }}</h5>
+</div>
+
+<!-- Filtres -->
+<div class="card mb-3" style="border:none;border-radius:.75rem;box-shadow:0 1px 6px rgba(0,0,0,.07)">
+  <div class="card-body py-2 px-3">
+    <form method="get" class="d-flex align-items-center gap-2 flex-wrap">
+      <select name="entite" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+        <option value="CIE"        {% if entite == 'CIE' %}selected{% endif %}>CIE</option>
+        <option value="Secteur"    {% if entite == 'Secteur' %}selected{% endif %}>Secteur</option>
+        <option value="Exploitant" {% if entite == 'Exploitant' %}selected{% endif %}>Exploitant</option>
+      </select>
+      <select name="classe" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+        <option value="">Toutes les classes</option>
+        {% for c in "12345678" %}<option value="{{ c }}" {% if classe == c %}selected{% endif %}>Classe {{ c }}</option>{% endfor %}
+      </select>
+      <div class="input-group input-group-sm" style="width:280px">
+        <span class="input-group-text" style="background:#f8fafc;border-color:#e5e7eb"><i class="bi bi-search" style="color:#9ca3af"></i></span>
+        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="N° compte ou libellé..." style="border-color:#e5e7eb;font-size:.83rem">
+        <button type="submit" class="btn btn-sm" style="background:#003F7F;color:#fff">OK</button>
+      </div>
+      {% if q or classe %}<a href="?entite={{ entite }}" class="btn btn-sm btn-outline-secondary" style="border-radius:.4rem;font-size:.78rem"><i class="bi bi-x"></i></a>{% endif %}
+      <span style="font-size:.78rem;color:#9ca3af;margin-left:auto">{{ lignes.count }} compte{% if lignes.count > 1 %}s{% endif %}</span>
+    </form>
+  </div>
+</div>
+
+<div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" style="font-size:.8rem">
+        <thead>
+          <tr style="background:#f8fafc">
+            <th style="padding:.6rem 1rem;font-weight:600;color:#374151;border:none">N° Compte</th>
+            <th style="padding:.6rem 1rem;font-weight:600;color:#374151;border:none">Intitulé</th>
+            <th class="text-end" style="padding:.6rem 1rem;font-weight:600;color:#374151;border:none">Report</th>
+            <th class="text-end" style="padding:.6rem 1rem;font-weight:600;color:#374151;border:none">Act. Période</th>
+            <th class="text-end" style="padding:.6rem 1rem;font-weight:600;color:#374151;border:none">Act. Exercice</th>
+            <th class="text-end" style="padding:.6rem 1rem;font-weight:700;color:#003F7F;border:none">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ligne in lignes %}
+          <tr style="border-bottom:1px solid #f8f8f8">
+            <td style="border:none;padding:.5rem 1rem;font-family:monospace;font-weight:700;color:#003F7F;font-size:.85rem">{{ ligne.num_compte }}</td>
+            <td style="border:none;padding:.5rem 1rem;color:#374151">{{ ligne.intitule|truncatechars:45 }}</td>
+            <td class="text-end" style="border:none;padding:.5rem 1rem;color:#6b7280;font-family:monospace;font-size:.78rem">{{ ligne.report|floatformat:0 }}</td>
+            <td class="text-end" style="border:none;padding:.5rem 1rem;color:#6b7280;font-family:monospace;font-size:.78rem">{{ ligne.activite_periode|floatformat:0 }}</td>
+            <td class="text-end" style="border:none;padding:.5rem 1rem;color:#6b7280;font-family:monospace;font-size:.78rem">{{ ligne.activite_exercice|floatformat:0 }}</td>
+            <td class="text-end" style="border:none;padding:.5rem 1rem;font-weight:700;color:{% if ligne.total < 0 %}#dc2626{% else %}#065f46{% endif %};font-family:monospace">{{ ligne.total|floatformat:0 }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center py-4" style="border:none;color:#9ca3af">Aucun compte trouvé</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

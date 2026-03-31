@@ -231,6 +231,9 @@
 {% endif %}
 
 
+<!-- ══ FILTRE PÉRIODE ════════════════════════════════════════════════════════ -->
+{% include "partials/filtre_periode_dashboard.html" %}
+
 <!-- ══ TAUX GLOBAUX ══════════════════════════════════════════════════════════ -->
 <div class="mb-2" style="font-size:.72rem;font-weight:700;color:#9ca3af;letter-spacing:.08em;text-transform:uppercase">
   Vue globale — {% if sd_selectionnee != 'all' %}SD filtrée{% else %}Toutes les sous-directions{% endif %}

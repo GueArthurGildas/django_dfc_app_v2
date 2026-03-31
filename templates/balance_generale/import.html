@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Importer une Balance Générale{% endblock %}
+{% block page_title %}Import Balance Générale{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <a href="{% url 'bg:dashboard' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem">
+    <i class="bi bi-arrow-left me-1"></i>Retour
+  </a>
+</div>
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 12px rgba(0,0,0,.08)">
+      <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid #003F7F;border-radius:1rem 1rem 0 0">
+        <h5 style="margin:0;font-size:1rem;font-weight:700;color:#1a1a2e">
+          <i class="bi bi-upload me-2" style="color:#003F7F"></i>Importer une Balance Générale
+        </h5>
+        <p style="margin:0;font-size:.78rem;color:#9ca3af">Fichier Excel exporté depuis JADE/SAP — structure tripartite CIE/Secteur/Exploitant</p>
+      </div>
+      <div class="card-body px-4 py-4">
+        <div class="rounded p-3 mb-4" style="background:#f0f4ff;border-left:4px solid #003F7F;font-size:.83rem;color:#374151">
+          <strong><i class="bi bi-info-circle me-1"></i>Format attendu :</strong> Fichier .xlsx avec en-tête sur 3 lignes, 13 colonnes (Description + 4 colonnes × 3 entités). Les montants FCFA peuvent être négatifs (créditeurs).
+        </div>
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          {% for field in form %}
+          <div class="mb-3">
+            <label class="form-label" style="font-size:.82rem;font-weight:600;color:#374151">
+              {{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}
+            </label>
+            {{ field }}
+            {% if field.help_text %}<div style="font-size:.72rem;color:#9ca3af;margin-top:.3rem">{{ field.help_text }}</div>{% endif %}
+            {% if field.errors %}<div class="text-danger" style="font-size:.78rem;margin-top:.3rem">{{ field.errors }}</div>{% endif %}
+          </div>
+          {% endfor %}
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger" style="font-size:.83rem;border-radius:.5rem">{{ form.non_field_errors }}</div>
+          {% endif %}
+          <button type="submit" class="btn w-100 fw-bold" style="background:#003F7F;color:#fff;border-radius:.5rem">
+            <i class="bi bi-cloud-upload me-1"></i>Importer et traiter
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

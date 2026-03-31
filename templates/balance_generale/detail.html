@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% load bg_extras %}
+{% block title %}{{ bg }} — Détail{% endblock %}
+{% block page_title %}Balance Générale{% endblock %}
+
+{% block content %}
+<div class="mb-3 d-flex align-items-center justify-content-between">
+  <a href="{% url 'bg:dashboard' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem">
+    <i class="bi bi-arrow-left me-1"></i>Retour
+  </a>
+  <div class="d-flex gap-2">
+    <a href="{% url 'bg:comptes' bg.pk %}" class="btn btn-sm btn-outline-primary" style="border-radius:.5rem;font-size:.82rem">
+      <i class="bi bi-table me-1"></i>Comptes détaillés
+    </a>
+    <a href="{% url 'bg:export_excel' bg.pk %}" class="btn btn-sm btn-outline-success" style="border-radius:.5rem;font-size:.82rem">
+      <i class="bi bi-file-earmark-excel me-1"></i>Export Excel
+    </a>
+    {% if request.user.role.code in 'admin,dfc,da' and bg.statut != 'gele' %}
+    <form method="post" action="{% url 'bg:supprimer' bg.pk %}"
+          onsubmit="return confirm('Supprimer définitivement la BG {{ bg.label_periode }} ? Cette action est irréversible.')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm btn-outline-danger" style="border-radius:.5rem;font-size:.82rem">
+        <i class="bi bi-trash3 me-1"></i>Supprimer
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<!-- En-tête BG -->
+<div class="card mb-4" style="border:none;border-radius:1rem;box-shadow:0 2px 12px rgba(0,0,0,.1);background:linear-gradient(135deg,#003F7F,#0059B3);overflow:hidden">
+  <div class="card-body px-4 py-3">
+    <div class="row align-items-center g-3">
+      <div class="col-md-5">
+        <h4 style="color:#fff;font-size:1.2rem;font-weight:800;margin:0">{{ bg.label_periode }}</h4>
+        <div style="color:rgba(255,255,255,.75);font-size:.82rem;margin-top:.25rem">
+          <i class="bi bi-file-earmark me-1"></i>{{ bg.fichier_nom }} &nbsp;·&nbsp; {{ bg.nb_lignes }} comptes
+        </div>
+      </div>
+      <div class="col-md-3 text-center">
+        <div style="color:#fff;font-size:2rem;font-weight:800;line-height:1">{{ bg.nb_anomalies }}</div>
+        <div style="color:rgba(255,255,255,.7);font-size:.72rem">anomalie{% if bg.nb_anomalies > 1 %}s{% endif %}</div>
+      </div>
+      <div class="col-md-4 text-end">
+        <span class="badge" style="font-size:.82rem;padding:.4rem .8rem;
+          {% if bg.statut == 'gele' %}background:#d1fae5;color:#065f46
+          {% elif bg.statut == 'valide' %}background:#dbeafe;color:#1d4ed8
+          {% elif bg.statut == 'traite' %}background:#fef3c7;color:#92400e
+          {% else %}background:rgba(255,255,255,.2);color:#fff{% endif %}">
+          {{ bg.get_statut_display }}
+        </span>
+        {% if bg.valide_par %}
+        <div style="color:rgba(255,255,255,.65);font-size:.72rem;margin-top:.3rem">
+          Validé par {{ bg.valide_par.nom_complet }} le {{ bg.date_validation|date:"d/m/Y" }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- KPIs -->
+{% if kpis %}
+<div class="row g-3 mb-4">
+  {% for libelle, valeur in kpis %}
+  <div class="col-md-4 col-lg">
+    <div class="card" style="border:none;border-radius:.75rem;box-shadow:0 2px 6px rgba(0,0,0,.06)">
+      <div class="card-body px-3 py-3 text-center">
+        <div style="font-size:1.1rem;font-weight:800;color:#003F7F;line-height:1.1">
+          {{ valeur|fmt_fcfa }}
+        </div>
+        <div style="font-size:.7rem;color:#6b7280;margin-top:.3rem;font-weight:500">{{ libelle }}</div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="row g-4">
+
+  <!-- COL GAUCHE -->
+  <div class="col-lg-8">
+
+    <!-- Agrégats par classe -->
+    <div class="card mb-4" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid #003F7F;border-radius:1rem 1rem 0 0">
+        <h6 style="margin:0;font-size:.9rem;font-weight:700;color:#1a1a2e">
+          <i class="bi bi-bar-chart me-2" style="color:#003F7F"></i>Agrégats par classe
+        </h6>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table mb-0" style="font-size:.82rem">
+            <thead>
+              <tr style="background:#f8fafc">
+                <th style="padding:.6rem 1.5rem;font-weight:600;color:#374151;border:none">Classe</th>
+                <th class="text-end" style="padding:.6rem 1rem;font-weight:600;color:#374151;border:none">CIE</th>
+                <th class="text-end" style="padding:.6rem 1rem;font-weight:600;color:#374151;border:none">Secteur</th>
+                <th class="text-end" style="padding:.6rem 1rem;font-weight:700;color:#003F7F;border:none">Exploitant</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in table_agregats %}
+              <tr style="border-bottom:1px solid #f8f8f8">
+                <td style="padding:.5rem 1.5rem;border:none;color:#374151;font-weight:500">
+                  Cl.{{ row.classe }} — {{ row.libelle }}
+                </td>
+                <td class="text-end" style="padding:.5rem 1rem;border:none;color:#6b7280;font-family:monospace;font-size:.78rem">
+                  {{ row.cie_total|fmt_fcfa }}
+                </td>
+                <td class="text-end" style="padding:.5rem 1rem;border:none;color:#6b7280;font-family:monospace;font-size:.78rem">
+                  {{ row.sect_total|fmt_fcfa }}
+                </td>
+                <td class="text-end" style="padding:.5rem 1rem;border:none;font-weight:700;color:#003F7F;font-family:monospace;font-size:.82rem">
+                  {{ row.expl_total|fmt_fcfa }}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center py-3" style="border:none;color:#9ca3af">Aucun agrégat disponible</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alertes -->
+    <div class="card mb-4" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-header px-4 py-3 d-flex align-items-center justify-content-between"
+           style="background:#fff;border-bottom:2px solid #003F7F;border-radius:1rem 1rem 0 0">
+        <h6 style="margin:0;font-size:.9rem;font-weight:700;color:#1a1a2e">
+          <i class="bi bi-bell me-2" style="color:#003F7F"></i>Alertes
+          {% if stats_alertes.ouvertes > 0 %}
+          <span class="badge ms-1" style="background:#dc2626;font-size:.68rem">{{ stats_alertes.ouvertes }} ouvertes</span>
+          {% endif %}
+        </h6>
+        <div class="d-flex gap-1">
+          <a href="{% url 'bg:detail' bg.pk %}" class="btn btn-sm {% if not filtre_niveau %}btn-primary{% else %}btn-outline-secondary{% endif %}" style="border-radius:.4rem;font-size:.72rem">Toutes</a>
+          <a href="?niveau=critique" class="btn btn-sm {% if filtre_niveau == 'critique' %}btn-danger{% else %}btn-outline-danger{% endif %}" style="border-radius:.4rem;font-size:.72rem">Critique ({{ stats_alertes.critique }})</a>
+          <a href="?niveau=haute" class="btn btn-sm {% if filtre_niveau == 'haute' %}btn-warning{% else %}btn-outline-warning{% endif %}" style="border-radius:.4rem;font-size:.72rem">Haute ({{ stats_alertes.haute }})</a>
+          <a href="?niveau=moyenne" class="btn btn-sm {% if filtre_niveau == 'moyenne' %}btn-secondary{% else %}btn-outline-secondary{% endif %}" style="border-radius:.4rem;font-size:.72rem">Moy. ({{ stats_alertes.moyenne }})</a>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        {% for alerte in alertes %}
+        <div class="px-4 py-3 {% if not forloop.last %}border-bottom{% endif %}" style="border-color:#f8f8f8">
+          <div class="d-flex align-items-start gap-3">
+            <div style="flex-shrink:0;margin-top:.15rem">
+              {% if alerte.niveau == 'critique' %}
+              <div style="width:32px;height:32px;border-radius:.5rem;background:#fee2e2;display:flex;align-items:center;justify-content:center">
+                <i class="bi bi-exclamation-octagon-fill" style="color:#dc2626;font-size:.85rem"></i>
+              </div>
+              {% elif alerte.niveau == 'haute' %}
+              <div style="width:32px;height:32px;border-radius:.5rem;background:#fef3c7;display:flex;align-items:center;justify-content:center">
+                <i class="bi bi-exclamation-triangle-fill" style="color:#d97706;font-size:.85rem"></i>
+              </div>
+              {% else %}
+              <div style="width:32px;height:32px;border-radius:.5rem;background:#f3f4f6;display:flex;align-items:center;justify-content:center">
+                <i class="bi bi-info-circle-fill" style="color:#6b7280;font-size:.85rem"></i>
+              </div>
+              {% endif %}
+            </div>
+            <div class="flex-grow-1">
+              <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                <span style="font-size:.72rem;font-weight:700;background:#f3f4f6;color:#374151;padding:.1rem .4rem;border-radius:.3rem;font-family:monospace">{{ alerte.code_regle }}</span>
+                {% if alerte.num_compte %}<span style="font-size:.72rem;color:#9ca3af">{{ alerte.num_compte }}</span>{% endif %}
+                <span class="badge ms-auto" style="font-size:.68rem;
+                  {% if alerte.statut == 'ouverte' %}background:#fee2e2;color:#dc2626
+                  {% elif alerte.statut == 'justifiee' %}background:#fef3c7;color:#92400e
+                  {% else %}background:#d1fae5;color:#065f46{% endif %}">
+                  {{ alerte.get_statut_display }}
+                </span>
+              </div>
+              <div style="font-size:.83rem;color:#374151">{{ alerte.message }}</div>
+              {% if alerte.justification %}
+              <div style="font-size:.75rem;color:#6b7280;margin-top:.25rem;font-style:italic">{{ alerte.justification }}</div>
+              {% endif %}
+            </div>
+          </div>
+          {% if bg.statut != 'gele' and bg.statut != 'valide' and alerte.statut == 'ouverte' %}
+          <div class="mt-2 ms-5">
+            <form method="post" action="{% url 'bg:traiter_alerte' bg.pk alerte.pk %}" class="d-flex gap-2">
+              {% csrf_token %}
+              <input type="text" name="justification" class="form-control form-control-sm"
+                     placeholder="Justification..." style="font-size:.78rem">
+              <select name="statut" class="form-select form-select-sm" style="width:auto;font-size:.78rem">
+                <option value="justifiee">Justifiée</option>
+                <option value="resolue">Résolue</option>
+                <option value="ignoree">Ignorée</option>
+              </select>
+              <button type="submit" class="btn btn-sm" style="background:#003F7F;color:#fff;border-radius:.4rem;font-size:.75rem;white-space:nowrap">
+                Enregistrer
+              </button>
+            </form>
+          </div>
+          {% endif %}
+        </div>
+        {% empty %}
+        <div class="text-center py-4" style="color:#28a745;font-size:.88rem">
+          <i class="bi bi-check-circle-fill display-6 d-block mb-2"></i>
+          Aucune alerte{% if filtre_niveau %} de niveau {{ filtre_niveau }}{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- COL DROITE -->
+  <div class="col-lg-4">
+
+    <!-- Graphique -->
+    {% if chart_labels %}
+    <div class="card mb-4" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid #003F7F;border-radius:1rem 1rem 0 0">
+        <h6 style="margin:0;font-size:.9rem;font-weight:700;color:#1a1a2e">
+          <i class="bi bi-pie-chart me-2" style="color:#003F7F"></i>Répartition Exploitant
+        </h6>
+      </div>
+      <div class="card-body">
+        <canvas id="chartClasses" height="250"></canvas>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Validation DF -->
+    {% if bg.statut == 'traite' %}
+    <div class="card mb-4" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid #28a745;border-radius:1rem 1rem 0 0">
+        <h6 style="margin:0;font-size:.9rem;font-weight:700;color:#1a1a2e">
+          <i class="bi bi-patch-check me-2" style="color:#28a745"></i>Validation DF
+        </h6>
+      </div>
+      <div class="card-body px-4 py-3">
+        {% if stats_alertes.critique_ouvertes > 0 %}
+        <div class="rounded p-2 mb-3" style="background:#fee2e2;font-size:.78rem;color:#dc2626">
+          <i class="bi bi-x-circle me-1"></i>{{ stats_alertes.critique_ouvertes }} alerte{% if stats_alertes.critique_ouvertes > 1 %}s{% endif %} critique{% if stats_alertes.critique_ouvertes > 1 %}s{% endif %} encore ouvertes — justifiez-les pour valider.
+        </div>
+        {% else %}
+        <form method="post" action="{% url 'bg:valider' bg.pk %}">
+          {% csrf_token %}
+          <div class="mb-2">
+            <label style="font-size:.78rem;font-weight:600;color:#374151">Commentaire</label>
+            {{ form_valid.commentaire }}
+          </div>
+          <div class="form-check mb-3">
+            {{ form_valid.geler_periode }}
+            <label class="form-check-label" style="font-size:.78rem">{{ form_valid.geler_periode.label }}</label>
+          </div>
+          <button type="submit" class="btn btn-sm w-100 fw-bold" style="background:#28a745;color:#fff;border-radius:.5rem">
+            <i class="bi bi-check-lg me-1"></i>Valider la période
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Audit trail -->
+    <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid #003F7F;border-radius:1rem 1rem 0 0">
+        <h6 style="margin:0;font-size:.9rem;font-weight:700;color:#1a1a2e">
+          <i class="bi bi-clock-history me-2" style="color:#003F7F"></i>Journal d'audit
+        </h6>
+      </div>
+      <div class="card-body p-0">
+        {% for a in audit %}
+        <div class="px-4 py-2 {% if not forloop.last %}border-bottom{% endif %}" style="border-color:#f8f8f8">
+          <div style="font-size:.78rem;font-weight:600;color:#374151">{{ a.get_action_display }}</div>
+          <div style="font-size:.72rem;color:#9ca3af">
+            {{ a.utilisateur.nom_complet|default:"—" }} — {{ a.created_at|date:"d/m/Y H:i" }}
+          </div>
+          {% if a.detail %}
+          <div style="font-size:.72rem;color:#6b7280;font-style:italic">{{ a.detail|truncatechars:60 }}</div>
+          {% endif %}
+        </div>
+        {% empty %}
+        <div class="text-center py-3" style="color:#9ca3af;font-size:.82rem">Aucune action</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if chart_labels %}
+<script>
+new Chart(document.getElementById('chartClasses'), {
+  type: 'doughnut',
+  data: {
+    labels:   {{ chart_labels|safe }},
+    datasets: [{
+      data:            {{ chart_values|safe }},
+      backgroundColor: ['#003F7F','#0059B3','#4299e1','#63b3ed','#90cdf4','#bee3f8','#ebf8ff'],
+      borderWidth: 0,
+      hoverOffset: 6,
+    }]
+  },
+  options: {
+    cutout: '60%',
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 10 } },
+      tooltip: { callbacks: {
+        label: function(c) {
+          var v = c.raw;
+          if (v >= 1e9) return ' ' + c.label + ' : ' + (v/1e9).toFixed(2) + ' Mrd FCFA';
+          if (v >= 1e6) return ' ' + c.label + ' : ' + (v/1e6).toFixed(0) + ' M FCFA';
+          return ' ' + c.label + ' : ' + v.toLocaleString() + ' FCFA';
+        }
+      }}
+    }
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

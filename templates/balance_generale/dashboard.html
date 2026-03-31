@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% load bg_extras %}
+{% block title %}Balance Générale{% endblock %}
+{% block page_title %}Balance Générale{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+  <div>
+    <h2 style="font-size:1.4rem;font-weight:800;color:#1a1a2e;margin:0">Balance Générale Analytique</h2>
+    <p style="margin:0;font-size:.85rem;color:#6b7280">Compagnie Ivoirienne d'Électricité — SYSCOHADA</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'bg:import' %}" class="btn btn-sm" style="background:#003F7F;color:#fff;border-radius:.5rem">
+      <i class="bi bi-upload me-1"></i>Importer une BG
+    </a>
+    <a href="{% url 'bg:imports' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem">
+      <i class="bi bi-clock-history me-1"></i>Historique
+    </a>
+  </div>
+</div>
+
+<!-- Filtre exercice/période -->
+<div class="card mb-4" style="border:none;border-radius:.75rem;box-shadow:0 1px 6px rgba(0,0,0,.07)">
+  <div class="card-body py-2 px-3">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <span style="font-size:.8rem;font-weight:700;color:#374151"><i class="bi bi-calendar3 me-1" style="color:#003F7F"></i>Période</span>
+      <select name="exercice" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+        <option value="">Tous les exercices</option>
+        {% for ex in exercices %}<option value="{{ ex }}" {% if filtre_exercice == ex|stringformat:"s" %}selected{% endif %}>{{ ex }}</option>{% endfor %}
+      </select>
+      <select name="periode" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+        <option value="">Toutes les périodes</option>
+        {% for val, label in periodes %}
+        <option value="{{ val }}" {% if filtre_periode == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+</div>
+
+{% if bg_actif %}
+<!-- BG active -->
+<div class="card mb-4" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.08);border-left:5px solid #003F7F">
+  <div class="card-body px-4 py-3">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div>
+        <h5 style="margin:0;font-size:1.05rem;font-weight:800;color:#1a1a2e">
+          <i class="bi bi-bar-chart-line me-2" style="color:#003F7F"></i>{{ bg_actif.label_periode }}
+        </h5>
+        <div class="d-flex gap-2 mt-1 flex-wrap">
+          <span class="badge" style="background:{% if bg_actif.statut == 'gele' %}#d1fae5;color:#065f46{% elif bg_actif.statut == 'valide' %}#dbeafe;color:#1d4ed8{% else %}#fef3c7;color:#92400e{% endif %};font-size:.72rem">
+            {{ bg_actif.get_statut_display }}
+          </span>
+          <span style="font-size:.75rem;color:#6b7280">
+            <i class="bi bi-file-earmark me-1"></i>{{ bg_actif.nb_lignes }} comptes
+          </span>
+          {% if bg_actif.nb_anomalies > 0 %}
+          <span style="font-size:.75rem;color:#dc2626;font-weight:600">
+            <i class="bi bi-exclamation-triangle me-1"></i>{{ bg_actif.nb_anomalies }} anomalie{% if bg_actif.nb_anomalies > 1 %}s{% endif %}
+          </span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{% url 'bg:detail' bg_actif.pk %}" class="btn btn-sm" style="background:#003F7F;color:#fff;border-radius:.5rem;font-size:.82rem">
+          <i class="bi bi-eye me-1"></i>Détail complet
+        </a>
+        <a href="{% url 'bg:comptes' bg_actif.pk %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem;font-size:.82rem">
+          <i class="bi bi-table me-1"></i>Comptes
+        </a>
+        <a href="{% url 'bg:export_excel' bg_actif.pk %}" class="btn btn-sm btn-outline-success" style="border-radius:.5rem;font-size:.82rem">
+          <i class="bi bi-file-earmark-excel me-1"></i>Export
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Alertes ouvertes -->
+{% if alertes_critiques or alertes_hautes %}
+<div class="row g-3 mb-4">
+  {% if alertes_critiques %}
+  <div class="col-md-6">
+    <div class="rounded-3 p-3 d-flex align-items-center gap-3" style="background:#fee2e2;border-left:4px solid #dc2626">
+      <i class="bi bi-exclamation-octagon-fill" style="font-size:1.8rem;color:#dc2626;flex-shrink:0"></i>
+      <div>
+        <div style="font-size:1.5rem;font-weight:800;color:#dc2626;line-height:1">{{ alertes_critiques }}</div>
+        <div style="font-size:.78rem;font-weight:600;color:#991b1b">Alerte{% if alertes_critiques > 1 %}s{% endif %} critique{% if alertes_critiques > 1 %}s{% endif %} — Bloque la validation</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% if alertes_hautes %}
+  <div class="col-md-6">
+    <div class="rounded-3 p-3 d-flex align-items-center gap-3" style="background:#fef3c7;border-left:4px solid #F5A623">
+      <i class="bi bi-exclamation-triangle-fill" style="font-size:1.8rem;color:#F5A623;flex-shrink:0"></i>
+      <div>
+        <div style="font-size:1.5rem;font-weight:800;color:#d97706;line-height:1">{{ alertes_hautes }}</div>
+        <div style="font-size:.78rem;font-weight:600;color:#92400e">Alerte{% if alertes_hautes > 1 %}s{% endif %} haute{% if alertes_hautes > 1 %}s{% endif %} — Justification requise</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- KPIs financiers -->
+<div class="row g-3 mb-4">
+  {% for libelle, valeur in kpis %}
+  <div class="col-md-4 col-lg">
+    <div class="card h-100" style="border:none;border-radius:.75rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-body px-3 py-3 text-center">
+        <div style="font-size:1.2rem;font-weight:800;color:#003F7F;line-height:1.1">
+          {{ valeur|fmt_fcfa }}
+          <span style="font-size:.6rem;color:#9ca3af;font-weight:400"> FCFA</span>
+        </div>
+        <div style="font-size:.72rem;color:#6b7280;margin-top:.3rem;font-weight:500">{{ libelle }}</div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Graphique agrégats -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-7">
+    <div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid #003F7F;border-radius:1rem 1rem 0 0">
+        <h6 style="margin:0;font-size:.9rem;font-weight:700;color:#1a1a2e">
+          <i class="bi bi-bar-chart me-2" style="color:#003F7F"></i>Répartition par classe — Exploitant
+        </h6>
+      </div>
+      <div class="card-body">
+        <canvas id="chartClasses" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card h-100" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="card-header px-4 py-3" style="background:#fff;border-bottom:2px solid #003F7F;border-radius:1rem 1rem 0 0">
+        <h6 style="margin:0;font-size:.9rem;font-weight:700;color:#1a1a2e">
+          <i class="bi bi-list-check me-2" style="color:#003F7F"></i>Derniers imports
+        </h6>
+      </div>
+      <div class="card-body p-0">
+        {% for imp in imports|slice:":8" %}
+        <a href="{% url 'bg:detail' imp.pk %}" class="text-decoration-none">
+          <div class="d-flex align-items-center px-4 py-2 {% if not forloop.last %}border-bottom{% endif %}" style="border-color:#f8f8f8;transition:background .1s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+            <div class="flex-grow-1">
+              <div style="font-size:.85rem;font-weight:600;color:#1a1a2e">{{ imp.label_periode }}</div>
+              <div style="font-size:.72rem;color:#9ca3af">{{ imp.nb_lignes }} comptes · {{ imp.nb_anomalies }} anomalie{% if imp.nb_anomalies > 1 %}s{% endif %}</div>
+            </div>
+            <span class="badge" style="font-size:.68rem;{% if imp.statut == 'gele' %}background:#d1fae5;color:#065f46{% elif imp.statut == 'valide' %}background:#dbeafe;color:#1d4ed8{% elif imp.statut == 'traite' %}background:#fef3c7;color:#92400e{% else %}background:#f3f4f6;color:#374151{% endif %}">
+              {{ imp.get_statut_display }}
+            </span>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% else %}
+<!-- Aucune BG -->
+<div class="card text-center py-5" style="border-radius:1rem;border:none;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+  <i class="bi bi-file-earmark-bar-graph display-3 text-muted d-block mb-3" style="opacity:.3"></i>
+  <h5 style="color:#6b7280">Aucune Balance Générale importée</h5>
+  <p style="color:#9ca3af;font-size:.88rem">Commencez par importer votre premier fichier BG depuis JADE/SAP.</p>
+  <a href="{% url 'bg:import' %}" class="btn" style="background:#003F7F;color:#fff;border-radius:.5rem">
+    <i class="bi bi-upload me-1"></i>Importer ma première BG
+  </a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if bg_actif and chart_labels %}
+<script>
+new Chart(document.getElementById('chartClasses'), {
+  type: 'bar',
+  data: {
+    labels:   {{ chart_labels|safe }},
+    datasets: [{
+      label:           'Solde total (FCFA)',
+      data:            {{ chart_values|safe }},
+      backgroundColor: '#003F7F',
+      borderRadius:    4,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: {
+        ticks: {
+          callback: function(v) {
+            if (Math.abs(v) >= 1e9) return (v/1e9).toFixed(1) + ' Mrd';
+            if (Math.abs(v) >= 1e6) return (v/1e6).toFixed(0) + ' M';
+            return v;
+          }
+        }
+      }
+    }
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

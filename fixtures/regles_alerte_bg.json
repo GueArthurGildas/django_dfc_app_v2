@@ -1,0 +1,12 @@
+[
+  {"model":"balance_generale.bgreglealerte","pk":1,"fields":{"code":"DESEQUILIBRE_GLOBAL","libelle":"Déséquilibre global de la balance","niveau":"critique","description":"Sigma Débits ≠ Sigma Crédits sur Exploitant","seuil":1.0,"active":true,"ordre":1}},
+  {"model":"balance_generale.bgreglealerte","pk":2,"fields":{"code":"INCOHERENCE_CALCUL","libelle":"Incohérence de calcul ligne","niveau":"critique","description":"Total ≠ Report + Activité Exercice","seuil":1.0,"active":true,"ordre":2}},
+  {"model":"balance_generale.bgreglealerte","pk":3,"fields":{"code":"CONSOLIDATION_INVALIDE","libelle":"Consolidation invalide","niveau":"critique","description":"Exploitant ≠ CIE + Secteur (hors 185xxx)","seuil":100.0,"active":true,"ordre":3}},
+  {"model":"balance_generale.bgreglealerte","pk":4,"fields":{"code":"TRESORERIE_NEGATIVE","libelle":"Trésorerie nette négative","niveau":"critique","description":"Solde Cl.5 Exploitant < 0","seuil":0.0,"active":true,"ordre":4}},
+  {"model":"balance_generale.bgreglealerte","pk":5,"fields":{"code":"INTERCO_ASYMETRIQUE","libelle":"Compte interco asymétrique","niveau":"haute","description":"CIE 185xxx + Secteur 185xxx ≠ 0","seuil":1.0,"active":true,"ordre":5}},
+  {"model":"balance_generale.bgreglealerte","pk":6,"fields":{"code":"CAPITAL_DEBITEUR","libelle":"Capital social débiteur","niveau":"haute","description":"Solde 101xxx > 0 (débiteur)","seuil":0.0,"active":true,"ordre":6}},
+  {"model":"balance_generale.bgreglealerte","pk":7,"fields":{"code":"DECOUVERTE_BANCAIRE","libelle":"Découverte bancaire non déclarée","niveau":"haute","description":"Solde 521xxx ou 531xxx > 0 (créditeur)","seuil":0.0,"active":true,"ordre":7}},
+  {"model":"balance_generale.bgreglealerte","pk":8,"fields":{"code":"COMPTE_ATTENTE","libelle":"Compte d'attente persistant","niveau":"moyenne","description":"471xxx ou 478xxx avec solde ≠ 0","seuil":1.0,"active":true,"ordre":8}},
+  {"model":"balance_generale.bgreglealerte","pk":9,"fields":{"code":"IMMOB_EN_COURS","libelle":"Immobilisations en cours à surveiller","niveau":"moyenne","description":"Compte 231xxx avec solde > 0","seuil":0.0,"active":true,"ordre":9}},
+  {"model":"balance_generale.bgreglealerte","pk":10,"fields":{"code":"VIREMENT_FONDS_OUVERT","libelle":"Virement de fonds non soldé","niveau":"haute","description":"Compte 580 non soldé à la clôture","seuil":1.0,"active":true,"ordre":10}}
+]

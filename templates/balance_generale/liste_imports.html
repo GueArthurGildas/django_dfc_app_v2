@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Historique imports BG{% endblock %}
+{% block page_title %}Balance Générale — Historique{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h2 style="font-size:1.4rem;font-weight:800;color:#1a1a2e;margin:0">Historique des imports</h2>
+    <p style="margin:0;font-size:.85rem;color:#6b7280">{{ imports|length }} import{% if imports|length > 1 %}s{% endif %} enregistré{% if imports|length > 1 %}s{% endif %}</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'bg:import' %}" class="btn btn-sm" style="background:#003F7F;color:#fff;border-radius:.5rem">
+      <i class="bi bi-upload me-1"></i>Nouvel import
+    </a>
+    <a href="{% url 'bg:dashboard' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem">
+      <i class="bi bi-house me-1"></i>Dashboard
+    </a>
+  </div>
+</div>
+
+<div class="card" style="border:none;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0" style="font-size:.85rem">
+      <thead>
+        <tr style="border-bottom:2px solid #f0f0f0">
+          <th class="ps-4" style="font-size:.71rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;border:none;padding:.75rem">Période</th>
+          <th style="font-size:.71rem;font-weight:700;color:#9ca3af;text-transform:uppercase;border:none;padding:.75rem">Comptes</th>
+          <th style="font-size:.71rem;font-weight:700;color:#9ca3af;text-transform:uppercase;border:none;padding:.75rem">Anomalies</th>
+          <th style="font-size:.71rem;font-weight:700;color:#9ca3af;text-transform:uppercase;border:none;padding:.75rem">Importé par</th>
+          <th style="font-size:.71rem;font-weight:700;color:#9ca3af;text-transform:uppercase;border:none;padding:.75rem">Date</th>
+          <th style="font-size:.71rem;font-weight:700;color:#9ca3af;text-transform:uppercase;border:none;padding:.75rem">Statut</th>
+          <th style="border:none"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for imp in imports %}
+        <tr style="border-bottom:1px solid #f8f8f8">
+          <td class="ps-4" style="border:none;padding:.7rem;font-weight:700;color:#1a1a2e">{{ imp.label_periode }}</td>
+          <td style="border:none;padding:.7rem;color:#6b7280">{{ imp.nb_lignes }}</td>
+          <td style="border:none;padding:.7rem">
+            {% if imp.nb_anomalies > 0 %}
+            <span style="color:#dc2626;font-weight:600"><i class="bi bi-exclamation-triangle me-1"></i>{{ imp.nb_anomalies }}</span>
+            {% else %}
+            <span style="color:#28a745"><i class="bi bi-check-circle me-1"></i>0</span>
+            {% endif %}
+          </td>
+          <td style="border:none;padding:.7rem;color:#6b7280">{{ imp.importe_par.nom_complet|default:"—" }}</td>
+          <td style="border:none;padding:.7rem;color:#6b7280;font-size:.8rem">{{ imp.date_import|date:"d/m/Y H:i" }}</td>
+          <td style="border:none;padding:.7rem">
+            <span class="badge" style="font-size:.7rem;{% if imp.statut == 'gele' %}background:#d1fae5;color:#065f46{% elif imp.statut == 'valide' %}background:#dbeafe;color:#1d4ed8{% elif imp.statut == 'traite' %}background:#fef3c7;color:#92400e{% elif imp.statut == 'rejete' %}background:#fee2e2;color:#dc2626{% else %}background:#f3f4f6;color:#374151{% endif %}">
+              {{ imp.get_statut_display }}
+            </span>
+          </td>
+          <td style="border:none;padding:.7rem">
+            <a href="{% url 'bg:detail' imp.pk %}" class="btn btn-sm btn-outline-primary" style="font-size:.75rem;border-radius:.4rem">Voir</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center py-5" style="border:none;color:#9ca3af">Aucun import</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
