@@ -503,8 +503,26 @@ class ClonerActiviteView(LoginRequiredMixin, View):
 
 
 class ChangerStatutView(LoginRequiredMixin, View):
+    ROLES_AUTORISES = ('admin', 'dfc', 'da', 'sd', 'chef', 'cadre')
+
     def post(self, request, pk):
+        # Vérifier le rôle — maîtrise et visiteur ne peuvent pas changer le statut
+        role = request.user.role.code if request.user.role else ''
+        if role not in self.ROLES_AUTORISES:
+            return JsonResponse(
+                {'error': "Vous n'avez pas les droits pour modifier le statut d'une activité."},
+                status=403
+            )
+
         activite = get_object_or_404(Activite, pk=pk)
+
+        # Vérifier aussi les permissions liées au créateur
+        if not activite.peut_suivre(request.user):
+            return JsonResponse(
+                {'error': "Vous n'êtes pas acteur de cette activité."},
+                status=403
+            )
+
         try:
             data   = json.loads(request.body)
             statut = data.get('statut')

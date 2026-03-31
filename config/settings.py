@@ -29,7 +29,6 @@ INSTALLED_APPS = [
     'apps.operations',
     'apps.comptabilite',
     'apps.dashboard',
-    'apps.balance_generale',
 ]
 
 MIDDLEWARE = [
