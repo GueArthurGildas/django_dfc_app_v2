@@ -147,7 +147,7 @@
 
       {% if alertes %}
         {% for alerte in alertes %}
-        <a href="{% url 'operations:activite_detail' alerte.activite.pk %}"
+        <a href="{% if alerte.activite.pk %}{% url 'operations:activite_detail' alerte.activite.pk %}{% else %}#{% endif %}"
            class="dropdown-item px-3 py-2 d-flex align-items-start gap-2"
            style="border-bottom:1px solid #f8f8f8;transition:background .15s">
           <!-- Icône type -->

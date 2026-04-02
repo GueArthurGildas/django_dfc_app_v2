@@ -325,8 +325,8 @@
             {% endif %}
           </div>
 
-          <!-- Switch état (si activité non clôturée) -->
-          {% if activite.statut != 'cloturee' %}
+          <!-- Switch état (réservé cadres et niveaux supérieurs) -->
+          {% if activite.statut != 'cloturee' and request.user.role.code not in 'maitrise,visiteur' %}
           <div class="flex-shrink-0 d-flex flex-column gap-1" style="min-width:160px">
             <select class="form-select form-select-sm doc-etat-select"
                     data-doc="{{ doc.pk }}"
@@ -349,7 +349,7 @@
           {% endif %}
 
           <!-- Supprimer -->
-          {% if activite.statut != 'cloturee' and peut_supprimer_doc %}
+          {% if activite.statut != 'cloturee' and peut_supprimer_doc and request.user.role.code not in 'maitrise,visiteur' %}
           <form method="post" action="{% url 'operations:document_supprimer' activite.pk doc.pk %}"
                 onsubmit="return confirm('Retirer ce document de l\'activité ?')">
             {% csrf_token %}

@@ -125,41 +125,17 @@ class DashboardView(LoginRequiredMixin, View):
 class IAChatView(LoginRequiredMixin, View):
     """Proxy vers Ollama — stream SSE vers le front."""
 
-    OLLAMA_URL  = 'http://localhost:11434/api/chat'
-    OLLAMA_PING = 'http://localhost:11434/api/tags'
-
-    def _ollama_disponible(self):
-        """Vérifie qu'Ollama répond avant de streamer."""
-        import urllib.request, urllib.error
-        try:
-            urllib.request.urlopen(self.OLLAMA_PING, timeout=3)
-            return True, None
-        except urllib.error.URLError as e:
-            return False, str(e.reason)
-        except Exception as e:
-            return False, str(e)
+    OLLAMA_URL = 'http://localhost:11434/api/chat'
 
     def post(self, request):
-        # ── 1. Vérifier qu'Ollama est démarré ─────────────────────────────
-        disponible, raison = self._ollama_disponible()
-        if not disponible:
-            return JsonResponse({
-                'error': (
-                    "Ollama n'est pas démarré sur ce poste. "
-                    "Lancez la commande : ollama serve  "
-                    f"(détail : {raison})"
-                )
-            }, status=503)
-
-        # ── 2. Parser le payload ───────────────────────────────────────────
         try:
-            body          = json.loads(request.body)
-            messages      = body.get('messages', [])
+            body     = json.loads(request.body)
+            messages = body.get('messages', [])
+            # Injecter le system prompt si premier message
             full_messages = [{'role': 'system', 'content': SYSTEM_PROMPT}] + messages
         except Exception:
             return JsonResponse({'error': 'Payload invalide'}, status=400)
 
-        # ── 3. Streamer la réponse ─────────────────────────────────────────
         def stream():
             import urllib.request
             payload = json.dumps({
@@ -180,7 +156,7 @@ class IAChatView(LoginRequiredMixin, View):
                         if not line:
                             continue
                         try:
-                            chunk   = json.loads(line)
+                            chunk = json.loads(line)
                             content = chunk.get('message', {}).get('content', '')
                             if content:
                                 yield f"data: {json.dumps({'content': content})}\n\n"
@@ -190,10 +166,10 @@ class IAChatView(LoginRequiredMixin, View):
                         except Exception:
                             continue
             except Exception as e:
-                yield f"data: {json.dumps({'error': f'Erreur Ollama : {e}'  })}\n\n"
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
                 yield "data: [DONE]\n\n"
 
         response = StreamingHttpResponse(stream(), content_type='text/event-stream')
-        response['Cache-Control']     = 'no-cache'
+        response['Cache-Control']  = 'no-cache'
         response['X-Accel-Buffering'] = 'no'
         return response

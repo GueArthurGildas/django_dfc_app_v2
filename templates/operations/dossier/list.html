@@ -8,9 +8,11 @@
     <h2 class="mb-1" style="font-size:1.4rem;font-weight:800;color:#1a1a2e">Dossiers</h2>
     <p class="mb-0" style="font-size:.85rem;color:#6b7280">{{ dossiers|length }} dossier{% if dossiers|length > 1 %}s{% endif %}</p>
   </div>
+  {% if request.user.role.code not in "chef,maitrise,visiteur" %}
   <a href="{% url 'operations:dossier_create' %}" class="btn btn-sm" style="background:#003F7F;color:#fff;border-radius:.5rem">
     <i class="bi bi-plus-lg me-1"></i>Nouveau dossier
   </a>
+  {% endif %}
 </div>
 
 <!-- Filtre SD -->
@@ -70,9 +72,11 @@
            style="background:{{ d.section.sous_direction.couleur }};color:{{ d.section.sous_direction.couleur_texte }};border-radius:.5rem;font-size:.8rem">
           Voir les activités
         </a>
+        {% if request.user.role.code not in "chef,maitrise,visiteur" %}
         <a href="{% url 'operations:dossier_update' d.pk %}" class="btn btn-sm btn-outline-secondary" style="border-radius:.5rem;font-size:.8rem">
           <i class="bi bi-pencil"></i>
         </a>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -80,7 +84,7 @@
   <div class="col-12">
     <div class="card text-center py-5" style="border-radius:1rem;border:none;box-shadow:0 2px 8px rgba(0,0,0,.06)">
       <i class="bi bi-folder2 display-4 text-muted mb-2 d-block"></i>
-      <p class="text-muted">Aucun dossier. <a href="{% url 'operations:dossier_create' %}">Créer le premier</a></p>
+      <p class="text-muted">Aucun dossier. {% if request.user.role.code not in "chef,maitrise,visiteur" %}<a href="{% url 'operations:dossier_create' %}">Créer le premier</a>{% endif %}</p>
     </div>
   </div>
 {% endfor %}

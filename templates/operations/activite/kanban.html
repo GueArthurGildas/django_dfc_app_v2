@@ -13,7 +13,6 @@
 }
 .kanban-card:active { cursor:grabbing; }
 .kanban-card.dragging { opacity:.5; transform:rotate(2deg); }
-.kanban-card[draggable="false"] { cursor: default; opacity: .85; }
 .kanban-col.drag-over { background:#f0f4ff!important; }
 .col-header { border-radius:.75rem .75rem 0 0; padding:.75rem 1rem; }
 </style>
@@ -57,7 +56,7 @@
       </div>
       <!-- Cards -->
       {% for a in col_data.activites %}
-      <div class="kanban-card p-3" draggable="{% if request.user.role.code in 'admin,dfc,da,sd,chef,cadre' %}true{% else %}false{% endif %}" data-id="{{ a.pk }}"
+      <div class="kanban-card p-3" draggable="{% if request.user.role.code in 'admin,dfc,da,sd,cadre' %}true{% else %}false{% endif %}" data-id="{{ a.pk }}"
            style="border-left:3px solid {{ a.section.sous_direction.couleur }}">
         <div class="d-flex align-items-start justify-content-between mb-1">
           <a href="{% url 'operations:activite_detail' a.pk %}" class="text-decoration-none" style="font-size:.83rem;font-weight:600;color:#1a1a2e;line-height:1.3">{{ a.titre|truncatechars:50 }}</a>
@@ -92,15 +91,14 @@
 
 {% block extra_js %}
 <script>
-// Construire l'URL correctement : remplace le 0 par l'ID réel de l'activité
 const STATUT_URL_TPL = "{% url 'operations:activite_statut' 0 %}";
-const CSRF = "{{ csrf_token }}";
-const PEUT_CHANGER_STATUT = {% if request.user.role.code in 'admin,dfc,da,sd,chef,cadre' %}true{% else %}false{% endif %};
-
+const CSRF           = "{{ csrf_token }}";
+const PEUT_DRAG      = {% if request.user.role.code in 'admin,dfc,da,sd,cadre' %}true{% else %}false{% endif %};
 let draggedCard = null;
 
 document.querySelectorAll('.kanban-card').forEach(card => {
   card.addEventListener('dragstart', e => {
+    if (!PEUT_DRAG) { e.preventDefault(); return; }
     draggedCard = card;
     card.classList.add('dragging');
   });
@@ -112,6 +110,7 @@ document.querySelectorAll('.kanban-card').forEach(card => {
 
 document.querySelectorAll('.kanban-col').forEach(col => {
   col.addEventListener('dragover', e => {
+    if (!PEUT_DRAG || !draggedCard) return;
     e.preventDefault();
     col.classList.add('drag-over');
   });
@@ -119,14 +118,13 @@ document.querySelectorAll('.kanban-col').forEach(col => {
   col.addEventListener('drop', e => {
     e.preventDefault();
     col.classList.remove('drag-over');
-    if (!draggedCard) return;
-    if (!PEUT_CHANGER_STATUT) {
-      showToast("Vous n'avez pas les droits pour modifier le statut.", true);
-      return;
-    }
-    const newStatut = col.dataset.statut;
-    const id = draggedCard.dataset.id;
+    if (!draggedCard || !PEUT_DRAG) return;
+
+    const newStatut  = col.dataset.statut;
+    const id         = draggedCard.dataset.id;
+    const origParent = draggedCard.parentElement;
     col.appendChild(draggedCard);
+
     const url = STATUT_URL_TPL.replace('/0/', '/' + id + '/');
     fetch(url, {
       method: 'POST',
@@ -135,20 +133,16 @@ document.querySelectorAll('.kanban-col').forEach(col => {
     })
     .then(r => r.json())
     .then(data => {
-      if (data.ok) showToast('Statut mis à jour : ' + newStatut.replace('_',' '));
-      else showToast('Erreur : ' + (data.error || '?'), true);
-    });
-    // Mettre à jour les compteurs
-    document.querySelectorAll('.kanban-col').forEach(c => {
-      const badge = c.previousElementSibling?.querySelector('.badge') || c.querySelector('.badge');
-    });
+      if (data.ok) showToast('Statut mis à jour.');
+      else { origParent.appendChild(draggedCard); showToast('Action non autorisée.', true); }
+    })
+    .catch(() => { origParent.appendChild(draggedCard); showToast('Action non autorisée.', true); });
   });
 });
 
 function showToast(msg, error=false) {
   const t = document.getElementById('kanban-toast');
-  const m = document.getElementById('toast-msg');
-  m.textContent = msg;
+  document.getElementById('toast-msg').textContent = msg;
   t.querySelector('div').style.background = error ? '#dc2626' : '#1a1a2e';
   t.style.display = 'block';
   setTimeout(() => t.style.display = 'none', 3000);

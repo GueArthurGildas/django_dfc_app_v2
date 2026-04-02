@@ -143,6 +143,13 @@ class DossierDetailView(LoginRequiredMixin, DetailView):
 class DossierCreateView(LoginRequiredMixin, View):
     template_name = 'operations/dossier/form.html'
 
+    def dispatch(self, request, *args, **kwargs):
+        role = request.user.role.code if request.user.role else ''
+        if role in ('chef', 'maitrise', 'visiteur'):
+            messages.error(request, "Les Chefs de section et agents de maîtrise ne peuvent pas créer de dossier.")
+            return redirect('operations:dossier_list')
+        return super().dispatch(request, *args, **kwargs)
+
     def _get_form(self, user, data=None):
         from apps.organisation.models import Section
         form = DossierForm(data)
@@ -195,6 +202,13 @@ class DossierUpdateView(LoginRequiredMixin, UpdateView):
     form_class = DossierForm
     template_name = 'operations/dossier/form.html'
     success_url = reverse_lazy('operations:dossier_list')
+
+    def dispatch(self, request, *args, **kwargs):
+        role = request.user.role.code if request.user.role else ''
+        if role in ('chef', 'maitrise', 'visiteur'):
+            messages.error(request, "Les Chefs de section et agents de maîtrise ne peuvent pas modifier un dossier.")
+            return redirect('operations:dossier_list')
+        return super().dispatch(request, *args, **kwargs)
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
@@ -503,26 +517,16 @@ class ClonerActiviteView(LoginRequiredMixin, View):
 
 
 class ChangerStatutView(LoginRequiredMixin, View):
-    ROLES_AUTORISES = ('admin', 'dfc', 'da', 'sd', 'chef', 'cadre')
+    ROLES_AUTORISES = ('admin', 'dfc', 'da', 'sd', 'cadre')
 
     def post(self, request, pk):
-        # Vérifier le rôle — maîtrise et visiteur ne peuvent pas changer le statut
         role = request.user.role.code if request.user.role else ''
         if role not in self.ROLES_AUTORISES:
             return JsonResponse(
-                {'error': "Vous n'avez pas les droits pour modifier le statut d'une activité."},
+                {'error': "Les Chefs de section et agents de maîtrise ne peuvent pas modifier le statut depuis le Kanban."},
                 status=403
             )
-
         activite = get_object_or_404(Activite, pk=pk)
-
-        # Vérifier aussi les permissions liées au créateur
-        if not activite.peut_suivre(request.user):
-            return JsonResponse(
-                {'error': "Vous n'êtes pas acteur de cette activité."},
-                status=403
-            )
-
         try:
             data   = json.loads(request.body)
             statut = data.get('statut')
@@ -568,7 +572,14 @@ class ActiviteKanbanView(LoginRequiredMixin, View):
 class AjouterDocumentActiviteView(LoginRequiredMixin, View):
     def post(self, request, pk):
         activite = get_object_or_404(Activite, pk=pk)
-        td_pk    = request.POST.get('type_document_id')
+        role = request.user.role.code if request.user.role else ''
+        if role in ('maitrise', 'visiteur'):
+            messages.error(request, "Les agents de maîtrise ne peuvent pas ajouter de document.")
+            return redirect('operations:activite_detail', pk=pk)
+        if not activite.peut_gerer_acteurs(request.user):
+            messages.error(request, "Vous n'avez pas les droits pour ajouter un document.")
+            return redirect('operations:activite_detail', pk=pk)
+        td_pk = request.POST.get('type_document_id')
         if td_pk:
             td = get_object_or_404(TypeDocument, pk=td_pk, actif=True)
             DocumentActivite.objects.get_or_create(
